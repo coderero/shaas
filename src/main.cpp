@@ -2,11 +2,11 @@
 #include <ArduinoMqttClient.h>
 
 // WiFi credentials
-const char *ssid = "SSID";
-const char *password = "PASSWORD";
+const char *ssid = "coderero.dev";
+const char *password = "xlct2435";
 
 // MQTT broker settings
-const char *mqtt_server = "SERVER_IP";
+const char *mqtt_server = "192.168.218.126";
 const int mqtt_port = 1883;
 
 WiFiClient wifiClient;

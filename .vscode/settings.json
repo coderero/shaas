@@ -87,6 +87,8 @@
   "files.associations": {
     "*.css": "css",
     "*.tmpl": "gotmpl",
-    "iostream": "cpp"
-  }
+    "iostream": "cpp",
+    "*.bazelignore": "cpp"
+  },
+  "C_Cpp.errorSquiggles": "disabled"
 }
