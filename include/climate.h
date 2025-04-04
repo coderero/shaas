@@ -3,6 +3,11 @@
 
 #include <string>
 
+#include <mux.h>
+
+#include <DHT.h>
+#include <Air_Quality_Sensor.h>
+
 class Climate
 {
 private:
@@ -12,10 +17,15 @@ private:
     float humidity;
     int airQualityIndex;
 
+    Mux *m;
+    DHT dht;
+    AirQualitySensor air_quality_sensor;
+
 public:
-    Climate(int dport, int aport)
-        : dport(dport), aport(aport), temperature(0.0f), humidity(0.0f), airQualityIndex(0) {};
+    Climate(int dport, const uint8_t &aport, int signal_pin, Mux *mux);
     ~Climate();
+
+    bool init();
 
     float getTemperature() const;
 
@@ -29,6 +39,6 @@ public:
     int getAPort() const;
 
     void readClimateData();
-}
+};
 
-#endif // CLIMATE_H
+#endif

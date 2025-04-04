@@ -1,5 +1,5 @@
-#if !defined(MUX)
-#define MUX
+#if !defined(MUX_H)
+#define MUX_H
 
 /**
  * @brief Enumeration for multiplexer operating modes
@@ -8,15 +8,15 @@ typedef enum
 {
     DIGITAL, ///< Digital mode for binary signals (HIGH/LOW)
     ANALOG   ///< Analog mode for continuous signals
-} mode;
+} mux_mode;
 
 /**
  * @brief Enumeration for signal direction
  */
 typedef enum
 {
-    INPUT, ///< Configure as input signal
-    OUTPUT ///< Configure as output signal
+    MUX_INPUT, ///< Configure as input signal
+    MUX_OUTPUT ///< Configure as output signal
 } signal_mode;
 
 /**
@@ -31,7 +31,7 @@ private:
     int *selection_pins;     ///< Array of pins used for channel selection
     int selection_pins_size; ///< Number of selection pins
     int selected_channel;    ///< Currently selected channel
-    mode mux_mode;           ///< Current operating mode (DIGITAL/ANALOG)
+    mux_mode mode;           ///< Current operating mode (DIGITAL/ANALOG)
     signal_mode signal;      ///< Current signal direction (INPUT/OUTPUT)
 
 public:
@@ -43,7 +43,7 @@ public:
      * @param mux_mode Multiplexer mode (DIGITAL or ANALOG)
      * @param signal Signal direction (INPUT or OUTPUT)
      */
-    Mux(int signal_pin, int *selection_pins, int selection_pins_size, mode mux_mode, signal_mode signal);
+    Mux(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode mode, signal_mode signal);
 
     /**
      * @brief Destructor for Mux class
@@ -60,13 +60,13 @@ public:
      * @brief Sets the multiplexer operating mode
      * @param mux_mode The mode to set (DIGITAL or ANALOG)
      */
-    void mode(mode mux_mode);
+    void m_mode(mux_mode mux_mode);
 
     /**
      * @brief Sets the signal direction mode
      * @param signal_mode The signal direction to set (INPUT or OUTPUT)
      */
-    void mode(signal_mode signal_mode);
+    void s_mode(signal_mode signal_mode);
 
     /**
      * @brief Reads the current value from the selected channel
@@ -79,6 +79,25 @@ public:
      * @param value The value to write (HIGH/LOW for digital, 0-255 for analog)
      */
     void write(int value);
+
+    /**
+     * @brief Sets the signal pin for the multiplexer
+     * @param signal_pin The pin to set for signal input/output
+     */
+
+    int getSelectedChannel() const
+    {
+        return selected_channel;
+    }
+
+    /**
+     * @brief Gets the signal pin used for the multiplexer
+     * @return The signal pin number
+     */
+    int getSignalPin() const
+    {
+        return signal_pin;
+    }
 };
 
-#endif // MUX
+#endif
