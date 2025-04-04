@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package transporter;
+
+
+enum Devices {
+    DEVICE_UNSPECIFIED = 0;
+    DEVICE_AQI = 1;
+    DEVICE_DHT22 = 2;
+    DEVICE_MOTION = 3;
+    DEVICE_LDR = 4;
+}
+
+message Timestamp {
+    int64 seconds = 1;
+    int32 nanos = 2;
+}
+
+message Surrondings {
+    string id = 1;
+    double aqi = 2;
+    double temperature = 3;
+    double humidity = 4;
+    string aqi_port = 5;
+    int32 dht22_port = 6;
+    Timestamp timestamp = 7;
+}
+
+message SurrondingsList {
+    repeated Surrondings surrondings = 1;
+}
+
+message Motion {
+    string id = 1;
+    bool motion = 2;
+    int32 port = 3;
+    Timestamp timestamp = 5;
+}
+
+message MotionList {
+    repeated Motion motion = 1;
+}
+
+message LDR {
+    string id = 1;
+    double ldr = 2;
+    string port = 3;
+}
+
+message LDRList {
+    repeated LDR ldr = 1;
+}
+
+message SecurityRequest {
+    string id = 1;
+    bytes rfid = 2;
+    Timestamp timestamp = 3;
+}
+
+message SecurityResponse {
+    string id = 1;
+    bytes rfid = 2;
+    bool approved = 3;
+    Timestamp timestamp = 4;
+}
+
+message Config {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    Devices device = 4;
+    string port = 5;
+    int32 pin = 6;
+    bool enabled = 7;
+    Timestamp timestamp = 8;
+}
+
+message ConfigList {
+    repeated Config config = 1;
+}
+
+
