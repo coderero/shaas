@@ -131,7 +131,8 @@
     "stdexcept": "cpp",
     "streambuf": "cpp",
     "cinttypes": "cpp",
-    "typeinfo": "cpp"
+    "typeinfo": "cpp",
+    "*.piopm": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

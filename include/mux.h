@@ -1,4 +1,4 @@
-#if !defined(MUX_H)
+#ifndef MUX_H
 #define MUX_H
 
 /**
@@ -7,7 +7,7 @@
 typedef enum
 {
     DIGITAL, ///< Digital mode for binary signals (HIGH/LOW)
-    ANALOG   ///< Analog mode for continuous signals
+    ANALOG   ///< Analog mode for continuous signals (PWM)
 } mux_mode;
 
 /**
@@ -21,7 +21,7 @@ typedef enum
 
 /**
  * @brief Multiplexer control class
- * Provides an interface to control a multiplexer/demultiplexer
+ * Provides an interface to control a CD74HC4067 multiplexer
  */
 class Mux
 {
@@ -33,17 +33,13 @@ private:
     int selected_channel;    ///< Currently selected channel
     mux_mode mode;           ///< Current operating mode (DIGITAL/ANALOG)
     signal_mode signal;      ///< Current signal direction (INPUT/OUTPUT)
+    bool initialized;        ///< Flag to indicate if Mux has been initialized
 
 public:
     /**
-     * @brief Constructor for Mux class
-     * @param signal_pin The pin used for signal input/output
-     * @param selection_pins Array of pins used for channel selection
-     * @param selection_pins_size Number of selection pins
-     * @param mux_mode Multiplexer mode (DIGITAL or ANALOG)
-     * @param signal Signal direction (INPUT or OUTPUT)
+     * @brief Default constructor for Mux class
      */
-    Mux(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode mode, signal_mode signal);
+    Mux();
 
     /**
      * @brief Destructor for Mux class
@@ -51,8 +47,18 @@ public:
     ~Mux();
 
     /**
+     * @brief Initializes the Mux with configuration
+     * @param signal_pin The pin used for signal input/output
+     * @param selection_pins Array of pins used for channel selection
+     * @param selection_pins_size Number of selection pins
+     * @param mode Multiplexer mode (DIGITAL or ANALOG)
+     * @param signal Signal direction (INPUT or OUTPUT)
+     */
+    void init(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode mode, signal_mode signal);
+
+    /**
      * @brief Selects a specific channel on the multiplexer
-     * @param channel The channel number to select (0 to mux_size-1)
+     * @param channel The channel number to select (0 to mux_size - 1)
      */
     void channel(int channel);
 
@@ -81,23 +87,16 @@ public:
     void write(int value);
 
     /**
-     * @brief Sets the signal pin for the multiplexer
-     * @param signal_pin The pin to set for signal input/output
+     * @brief Gets the currently selected channel
+     * @return Selected channel index
      */
-
-    int getSelectedChannel() const
-    {
-        return selected_channel;
-    }
+    int getSelectedChannel() const;
 
     /**
      * @brief Gets the signal pin used for the multiplexer
      * @return The signal pin number
      */
-    int getSignalPin() const
-    {
-        return signal_pin;
-    }
+    int getSignalPin() const;
 };
 
 #endif

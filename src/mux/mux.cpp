@@ -1,17 +1,31 @@
 #include <mux.h>
+#include <Arduino.h>
 #include <math.h>
 
-#include <Arduino.h>
+/**
+ * @brief Default constructor for Mux class
+ * Leaves Mux uninitialized until init() is called
+ */
+Mux::Mux()
+{
+    signal_pin = -1;
+    selection_pins = nullptr;
+    selection_pins_size = 0;
+    selected_channel = -1;
+    mux_size = 0;
+    initialized = false;
+}
 
 /**
- * @brief Constructor for Mux class
+ * @brief Initializes the multiplexer
+ * Sets up pin modes and calculates channel range
  * @param signal_pin The pin used for signal input/output
  * @param selection_pins Array of pins used for channel selection
  * @param selection_pins_size Number of selection pins
- * @param mux_mode Multiplexer mode (DIGITAL or ANALOG)
+ * @param mode Multiplexer mode (DIGITAL or ANALOG)
  * @param signal Signal direction (INPUT or OUTPUT)
  */
-Mux::Mux(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode mode, signal_mode signal)
+void Mux::init(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode mode, signal_mode signal)
 {
     this->signal_pin = signal_pin;
     this->selection_pins = selection_pins;
@@ -19,11 +33,10 @@ Mux::Mux(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode 
     this->mode = mode;
     this->signal = signal;
 
-    // Calculate total number of channels based on selection pins (2^n)
     this->mux_size = pow(2, selection_pins_size);
 
-    // Configure signal pin mode based on multiplexer mode and signal direction
-    if (mode == DIGITAL && signal == OUTPUT)
+    // Set signal pin mode
+    if (mode == DIGITAL && signal == MUX_OUTPUT)
     {
         pinMode(signal_pin, OUTPUT);
     }
@@ -32,16 +45,18 @@ Mux::Mux(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode 
         pinMode(signal_pin, INPUT);
     }
 
-    // Set all selection pins as outputs
+    // Set selection pins to output
     for (int i = 0; i < selection_pins_size; i++)
     {
         pinMode(selection_pins[i], OUTPUT);
     }
+
+    initialized = true;
 }
 
 /**
  * @brief Destructor for Mux class
- * Frees the memory allocated for selection pins
+ * Frees memory for selection pins
  */
 Mux::~Mux()
 {
@@ -49,22 +64,27 @@ Mux::~Mux()
 }
 
 /**
- * @brief Selects a specific channel on the multiplexer
- * @param channel The channel number to select (0 to mux_size-1)
- * @note Does nothing if channel is out of valid range
+ * @brief Selects a specific channel by setting selection pins
+ * @param channel The channel index to select
  */
 void Mux::channel(int channel)
 {
-    if (channel < 0 || channel >= mux_size)
-    {
+    if (!initialized || channel < 0 || channel >= mux_size)
         return;
-    }
+
     selected_channel = channel;
+
+    // Write binary value to selection pins
+    for (int i = 0; i < selection_pins_size; i++)
+    {
+        int bit = (channel >> i) & 1;
+        digitalWrite(selection_pins[i], bit);
+    }
 }
 
 /**
- * @brief Sets the multiplexer mode
- * @param mux_mode The mode to set (DIGITAL or ANALOG)
+ * @brief Sets the multiplexer operating mode
+ * @param mux_mode DIGITAL or ANALOG
  */
 void Mux::m_mode(mux_mode mux_mode)
 {
@@ -72,8 +92,8 @@ void Mux::m_mode(mux_mode mux_mode)
 }
 
 /**
- * @brief Sets the signal mode
- * @param signal_mode The signal direction to set (INPUT or OUTPUT)
+ * @brief Sets the signal direction (input/output)
+ * @param signal_mode MUX_INPUT or MUX_OUTPUT
  */
 void Mux::s_mode(signal_mode signal_mode)
 {
@@ -81,29 +101,27 @@ void Mux::s_mode(signal_mode signal_mode)
 }
 
 /**
- * @brief Reads the current value from the selected channel
- * @return Digital value (HIGH/LOW) if in DIGITAL INPUT mode, undefined otherwise
+ * @brief Reads signal from the current channel
+ * @return Digital HIGH/LOW signal if mode is DIGITAL and INPUT
  */
 int Mux::read()
 {
-    if (mode == DIGITAL && signal == INPUT)
-    {
-        return digitalRead(signal_pin);
-    }
-    else
-    {
+    if (!initialized || mode != DIGITAL || signal != MUX_INPUT)
         return 0;
-    }
+
+    return digitalRead(signal_pin);
 }
 
 /**
- * @brief Writes a value to the selected channel
- * @param value The value to write (HIGH/LOW for digital, 0-255 for analog)
- * @note Uses digitalWrite for DIGITAL OUTPUT mode, analogWrite otherwise
+ * @brief Writes a value to the current channel
+ * @param value HIGH/LOW for digital, 0–255 for analog
  */
 void Mux::write(int value)
 {
-    if (mode == DIGITAL && signal == OUTPUT)
+    if (!initialized)
+        return;
+
+    if (mode == DIGITAL && signal == MUX_OUTPUT)
     {
         digitalWrite(signal_pin, value);
     }
@@ -111,4 +129,22 @@ void Mux::write(int value)
     {
         analogWrite(signal_pin, value);
     }
+}
+
+/**
+ * @brief Gets the currently selected channel
+ * @return Channel number (0 to mux_size - 1)
+ */
+int Mux::getSelectedChannel() const
+{
+    return selected_channel;
+}
+
+/**
+ * @brief Gets the configured signal pin
+ * @return Signal pin number
+ */
+int Mux::getSignalPin() const
+{
+    return signal_pin;
 }

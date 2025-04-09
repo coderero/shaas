@@ -79,4 +79,3 @@ message ConfigList {
     repeated Config config = 1;
 }
 
-
