@@ -1,4 +1,5 @@
-#include <mux.h>
+#include <modules/mux.h>
+
 #include <Arduino.h>
 #include <math.h>
 

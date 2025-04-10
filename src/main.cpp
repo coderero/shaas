@@ -1,62 +1,41 @@
-#define MUX_SIGNAL 3
+#include <interfaces/IRFIDAuthenticator.h>
+#include <modules/rfid.h>
 
-#include <mux.h>
-// #include <climate.h>
-#include <lock.h>
+class MockAuthenticator : public IRFIDAuthenticator
+{
+public:
+  bool is_authenticated(const byte *uid, byte length) override
+  {
+    // Convert UID to a string for easier comparison
+    String uid_str = "";
+    for (byte i = 0; i < length; i++)
+    {
+      uid_str += String(uid[i], HEX);
+    }
 
-#include <Arduino.h>
-#include <Servo.h>
+    // Print the UID for debugging
+    Serial.print("UID: ");
+    Serial.println(uid_str);
+    return true;
+  }
+};
 
-const int selection_pins[] = {10, 5, 8, 9};
-
-Mux _mux;
-Lock _lock;
-
-// Climate climate(0, A0, MUX_SIGNAL, &mux);
-
-// void setup()
-// {
-//   Serial.begin(9600);
-//   Serial.println("Climate Sensor Initialization...");
-//   if (!climate.init())
-//   {
-//     Serial.println("Failed to initialize climate sensor!");
-//     while (1)
-//       ;
-//   }
-//   Serial.println("Climate Sensor Initialized Successfully!");
-// }
-
-// void loop()
-// {
-//   climate.readClimateData();
-
-//   Serial.print("Temperature: ");
-//   Serial.print(climate.getTemperature());
-//   Serial.println(" °C");
-
-//   Serial.print("Humidity: ");
-//   Serial.print(climate.getHumidity());
-//   Serial.println(" %");
-
-//   Serial.print("Air Quality Index: ");
-//   Serial.println(climate.getAirQualityIndex());
-
-//   delay(2000);
-// }
+RFID _rfid;
 
 void setup()
 {
   Serial.begin(9600);
-  _mux.init(MUX_SIGNAL, (int *)selection_pins, sizeof(selection_pins) / sizeof(selection_pins[0]), DIGITAL, MUX_INPUT);
-
-  _lock.init();
+  MockAuthenticator *authenticator = new MockAuthenticator();
+  _rfid.init(authenticator);
 }
 
 void loop()
 {
-  _lock.lock();
-  delay(1000);
-  _lock.unlock();
-  delay(1000);
+  // Simulate reading a card
+  byte uid[] = {0xDE, 0xAD, 0xBE, 0xEF};
+
+  if (_rfid.read_card())
+  {
+    Serial.println("Card read and authenticated.");
+  }
 }

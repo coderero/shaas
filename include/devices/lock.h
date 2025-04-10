@@ -1,7 +1,8 @@
 #if !defined(LOCK_H)
 #define LOCK_H
 
-#include <mux.h>
+#include <modules/mux.h>
+
 #include <Servo.h>
 
 /**

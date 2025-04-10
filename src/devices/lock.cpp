@@ -1,4 +1,4 @@
-#include <lock.h>
+#include <devices/lock.h>
 
 #include <Arduino.h>
 #include <Servo.h>
