@@ -32,6 +32,14 @@ public:
     virtual bool is_authenticated(const byte *uid, byte length) = 0;
 
     /**
+     * @brief Registers a new UID for authentication.
+     * @param uid Pointer to UID byte array
+     * @param length Length of the UID array
+     * @return true if registration was successful, false otherwise
+     */
+    virtual bool register_uid(const byte *uid, byte length) = 0;
+
+    /**
      * @brief Virtual destructor.
      *
      * Ensures derived class destructors are properly called.

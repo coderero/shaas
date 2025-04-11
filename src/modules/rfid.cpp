@@ -75,3 +75,31 @@ bool RFID::read_card()
 
     return is_authenticated;
 }
+
+/**
+ * @brief Registers a new UID with the authenticator.
+ *
+ * Reads the UID of a card and registers it with the provided IRFIDAuthenticator.
+ *
+ * @return true if registration was successful; false otherwise.
+ */
+bool RFID::register_card()
+{
+    if (!rfid || !authenticator)
+    {
+        return false;
+    }
+
+    if (!rfid->PICC_IsNewCardPresent() || !rfid->PICC_ReadCardSerial())
+    {
+        return false;
+    }
+
+    // Pass raw UID bytes to the authenticator
+    bool is_registered = authenticator->register_uid(rfid->uid.uidByte, rfid->uid.size);
+
+    rfid->PICC_HaltA();
+    rfid->PCD_StopCrypto1();
+
+    return is_registered;
+}

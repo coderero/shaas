@@ -1,5 +1,5 @@
 #include <interfaces/IRFIDAuthenticator.h>
-#include <modules/rfid.h>
+#include <services/security.h>
 
 class MockAuthenticator : public IRFIDAuthenticator
 {
@@ -18,23 +18,42 @@ public:
     Serial.println(uid_str);
     return true;
   }
+
+  bool register_uid(const byte *uid, byte length) override
+  {
+    // Mock registration logic
+    Serial.print("Registering UID: ");
+    for (byte i = 0; i < length; i++)
+    {
+      Serial.print(uid[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
+    return true;
+  }
 };
 
-RFID _rfid;
+Security _security;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  Serial.println("Starting Security System...");
+
   MockAuthenticator *authenticator = new MockAuthenticator();
-  _rfid.init(authenticator);
+  if (_security.init(authenticator))
+  {
+    Serial.println("Security system initialized successfully.");
+  }
+  else
+  {
+    Serial.println("Failed to initialize security system.");
+  }
 }
 
 void loop()
 {
-  // Simulate reading a card
-  byte uid[] = {0xDE, 0xAD, 0xBE, 0xEF};
-
-  if (_rfid.read_card())
+  if (_security.read_card())
   {
     Serial.println("Card read and authenticated.");
   }

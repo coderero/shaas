@@ -49,6 +49,16 @@ public:
      * @return true if an authorized card was successfully read; false otherwise.
      */
     bool read_card();
+
+    /**
+     * @brief Registers a new UID with the authenticator.
+     *
+     * This method reads the UID of a card and registers it with the
+     * provided authenticator.
+     *
+     * @return true if the registration was successful; false otherwise.
+     */
+    bool register_card();
 };
 
 #endif // RFID_H

@@ -44,9 +44,13 @@ public:
     ~Lock();
 
     /**
-     * @brief Initializes the servo motor and sets it to the locked position.
+     * @brief Initializes the lock mechanism by attaching the servo.
+     *
+     * This method sets up the servo motor for controlling the lock.
+     *
+     * @return true if initialization was successful.
      */
-    void init();
+    bool init();
 
     /**
      * @brief Engages the lock by setting the servo to the locked position.

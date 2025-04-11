@@ -22,13 +22,16 @@ Lock::~Lock()
 }
 
 /**
- * @brief Initializes the lock system.
- * Attaches the servo motor to pin 6 and moves it to the locked position.
+ * @brief Initializes the lock mechanism by attaching the servo.
+ * This method sets up the servo motor for controlling the lock.
+ * @return true if initialization is successful.
  */
-void Lock::init()
+bool Lock::init()
 {
-    _lock_servo.attach(6); // Attach the servo to pin 6
+    _lock_servo.attach(6); // Attach the servo to pin 9
     _lock_servo.write(0);  // Set initial position to "locked"
+    delay(1000);           // Allow time for servo to reach position
+    return true;
 }
 
 /**
@@ -51,7 +54,7 @@ bool Lock::lock()
 bool Lock::unlock()
 {
     _lock_servo.write(100); // Rotate servo to "unlocked" position
-    delay(5000);            // Keep unlocked for 5 seconds
+    delay(3000);            // Keep unlocked for 5 seconds
     _lock_servo.write(0);   // Relock automatically
     delay(1000);            // Allow time for relocking
     _lock_status = UNLOCK;  // Temporarily update status (consider status logic)
