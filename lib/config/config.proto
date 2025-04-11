@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package config;
+
+enum RelayType{
+    HEAVY_LOAD = 0;
+    LIGHT_LOAD = 1;
+}
+
+message Climate {
+    int64 id = 1;
+    int32 dht22_port = 2;
+    uint32 aqi_port = 3;
+    optional int32 buzzer_port = 4;
+}
+
+message LDR {
+    int64 id = 1;
+    uint32 port = 2;
+    string topic = 3;
+}
+
+message Motion {
+    int64 id = 1;
+    uint32 port = 2;
+    int32 relay_channel = 3;
+}
+
+message Relay {
+    int64 id = 1;
+    string topic = 3;
+    int32 lower_channel = 4;
+    int32 upper_channel = 5;
+    RelayType type = 2;
+}
+
+message Config {
+    repeated Climate climate = 1;
+    repeated LDR ldr = 2;
+    repeated Motion motion = 3;
+    repeated Relay relay = 4;
+}
