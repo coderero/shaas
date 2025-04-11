@@ -17,7 +17,7 @@ class Climate
 {
 private:
     int d_port;            ///< Mux channel for the DHT sensor
-    int a_port;            ///< Mux channel for the air quality sensor
+    uint8_t a_port;        ///< Mux channel for the air quality sensor
     int signal_pin;        ///< Digital GPIO pin connected to the DHT sensor
     float temperature;     ///< Last recorded temperature (°C)
     float humidity;        ///< Last recorded relative humidity (%)
