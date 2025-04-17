@@ -35,8 +35,9 @@ Climate::~Climate()
  * @param mux Pointer to a Mux object
  * @return true if air quality sensor initializes correctly
  */
-bool Climate::init(int d_port, const uint8_t &a_port, int signal_pin, Mux *mux)
+bool Climate::init(int id, int d_port, const uint8_t &a_port, int signal_pin, Mux *mux)
 {
+    this->id = id;
     this->d_port = d_port;
     this->a_port = a_port;
     this->signal_pin = signal_pin;
@@ -101,6 +102,15 @@ float Climate::get_humidity() const
 int Climate::get_air_quality_index() const
 {
     return air_quality_index;
+}
+
+/**
+ * @brief Returns the unique identifier for this climate module.
+ * @return ID of the climate module
+ */
+int Climate::get_id() const
+{
+    return id;
 }
 
 /**

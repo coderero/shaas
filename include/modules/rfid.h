@@ -15,8 +15,7 @@
 class RFID
 {
 private:
-    MFRC522 *rfid;                     ///< Pointer to dynamically allocated MFRC522 instance
-    IRFIDAuthenticator *authenticator; ///< Pointer to an authentication implementation
+    MFRC522 *rfid; ///< Pointer to dynamically allocated MFRC522 instance
 
 public:
     /**
@@ -30,15 +29,28 @@ public:
     ~RFID();
 
     /**
+     * @brief Returns the length of the UID of the last read card.
+     *
+     * @return Length of the UID in bytes.
+     */
+    byte *get_uid() { return rfid->uid.uidByte; } ///< Returns the UID of the last read card
+
+    /**
+     * @brief Returns the length of the UID of the last read card.
+     *
+     * @return Length of the UID in bytes.
+     */
+    byte get_uid_length() { return rfid->uid.size; } ///< Returns the length of the UID in bytes
+
+    /**
      * @brief Initializes the RFID reader and associates an authenticator.
      *
      * This method initializes SPI communication and allocates the MFRC522
      * instance using fixed pins (SS = 4, RST = 2).
      *
-     * @param authenticator Pointer to an IRFIDAuthenticator that verifies tag validity.
      * @return true if the initialization was successful.
      */
-    bool init(IRFIDAuthenticator *authenticator);
+    bool init();
 
     /**
      * @brief Attempts to read a card and authenticate it.
@@ -49,16 +61,6 @@ public:
      * @return true if an authorized card was successfully read; false otherwise.
      */
     bool read_card();
-
-    /**
-     * @brief Registers a new UID with the authenticator.
-     *
-     * This method reads the UID of a card and registers it with the
-     * provided authenticator.
-     *
-     * @return true if the registration was successful; false otherwise.
-     */
-    bool register_card();
 };
 
 #endif // RFID_H

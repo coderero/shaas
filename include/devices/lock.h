@@ -1,76 +1,64 @@
-#if !defined(LOCK_H)
+#ifndef LOCK_H
 #define LOCK_H
 
-#include <modules/mux.h>
-
+#include <Arduino.h>
 #include <Servo.h>
 
 /**
  * @brief Enumeration representing the lock status.
- *
- * - LOCK: The system is in a locked state.
- * - UNLOCK: The system is in an unlocked state.
  */
 typedef enum
 {
     LOCK,
-    UNLOCK
+    UNLOCKING,
+    UNLOCKED,
+    RELOCKING
 } lock_status;
 
 /**
- * @brief Lock class for controlling a servo-based locking mechanism.
- *
- * This class encapsulates the functionality for initializing, locking,
- * unlocking, and checking the status of a servo-controlled lock.
+ * @class Lock
+ * @brief Manages a servo-based locking mechanism with non-blocking behavior.
  */
 class Lock
 {
 private:
-    lock_status _lock_status = LOCK; ///< Current lock status
-
-    Servo _lock_servo; ///< Servo object used to control the physical lock
+    Servo _lock_servo;                ///< Servo object used to control the physical lock
+    uint32_t _last_action_time;       ///< Timestamp for last lock/unlock action
+    uint32_t _unlock_duration = 3000; ///< Duration in milliseconds to keep unlocked
+    lock_status _lock_status;         ///< Current lock state
+    bool _action_pending;             ///< Flag to track if a transition is in progress
 
 public:
     /**
-     * @brief Constructor for the Lock class.
-     * Initializes internal lock status to LOCK.
+     * @brief Constructs the Lock object with default locked status.
      */
     Lock();
 
     /**
-     * @brief Destructor for the Lock class.
-     * Cleans up resources if needed.
-     */
-    ~Lock();
-
-    /**
-     * @brief Initializes the lock mechanism by attaching the servo.
-     *
-     * This method sets up the servo motor for controlling the lock.
-     *
-     * @return true if initialization was successful.
+     * @brief Initializes the servo pin and locks initially.
+     * @return true if initialization succeeds.
      */
     bool init();
 
     /**
-     * @brief Engages the lock by setting the servo to the locked position.
-     *
-     * @return true if locking was successful.
-     */
-    bool lock();
-
-    /**
-     * @brief Unlocks the lock by rotating the servo.
-     * Automatically re-locks after 5 seconds.
-     *
-     * @return true if unlocking was successful.
+     * @brief Non-blocking call to begin unlocking process.
+     * @return true if transition initiated.
      */
     bool unlock();
 
     /**
-     * @brief Gets the current lock status.
-     *
-     * @return The current lock status (LOCK or UNLOCK).
+     * @brief Immediately locks the servo.
+     * @return true if locked successfully.
+     */
+    bool lock();
+
+    /**
+     * @brief Non-blocking update handler to manage timing-based relocking.
+     */
+    void handle();
+
+    /**
+     * @brief Returns current lock status.
      */
     lock_status get_lock_status();
 };

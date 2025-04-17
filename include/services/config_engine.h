@@ -23,16 +23,6 @@
 #define MAX_RELAY 10
 
 /**
- * @enum relay_type_t
- * @brief Defines the type of relay.
- */
-typedef enum _r_t
-{
-    HEAVY_LOAD, ///< Relay used for high-power devices
-    LIGHT_LOAD  ///< Relay used for low-power devices
-} relay_type_t;
-
-/**
  * @struct climate
  * @brief Configuration structure for climate modules.
  */
@@ -73,7 +63,7 @@ typedef struct _m
 typedef struct _r
 {
     uint8_t id;         ///< Unique identifier
-    relay_type_t type;  ///< Type of relay (HEAVY or LIGHT)
+    int type;           ///< Type of relay (HEAVY or LIGHT)
     uint8_t lower_port; ///< Control pin 1
     uint8_t upper_port; ///< Control pin 2
 } relay;
@@ -95,6 +85,19 @@ typedef struct _config_data
     motion motions[MAX_MOTION];    ///< Motion sensor config array
     relay relays[MAX_RELAY];       ///< Relay config array
 } config_data;
+
+// Default configuration structure
+const config_data default_config = {
+    .version = 1,
+    .size = sizeof(config_data),
+    .climate_size = 0,
+    .ldr_size = 0,
+    .motion_size = 0,
+    .relay_size = 0,
+    .climates = {},
+    .ldrs = {},
+    .motions = {},
+    .relays = {}};
 
 /**
  * @class ConfigEngine
@@ -134,6 +137,12 @@ public:
      * @return true if successful, false otherwise.
      */
     bool save_config();
+
+    /**
+     * @brief Sets the default configuration.
+     * @return true if valid, false otherwise.
+     */
+    bool set_default_config();
 
     /**
      * @brief Adds or updates a climate configuration.

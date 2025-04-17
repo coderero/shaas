@@ -1,6 +1,8 @@
 #ifndef PIR_H
 #define PIR_H
 
+#include <modules/mux.h>
+
 /**
  * @class PIR
  * @brief A class to handle Passive Infrared (PIR) motion sensor input.
@@ -11,10 +13,36 @@
 class PIR
 {
 private:
+    int id;        ///< Unique identifier for the PIR sensor
     int _port;     ///< GPIO pin connected to the PIR sensor
     bool movement; ///< Boolean flag indicating whether motion is detected
 
+    Mux *_mux; ///< Pointer to the Mux object for channel selection
+
 public:
+    /**
+     * @brief Default constructor for the PIR class.
+     */
+    PIR()
+        : id(-1), _port(-1), movement(false), _mux(nullptr) {} // Default values
+    /**
+     * @brief Destructor for the PIR class.
+     */
+    ~PIR() {};
+
+    /**
+     * @brief Initializes the PIR sensor with a Mux object.
+     * @param id Unique identifier for the PIR sensor.
+     * @param mux Pointer to the Mux object for channel selection.
+     */
+    void init(int id, Mux *mux);
+
+    /**
+     * @brief Sets the unique identifier for the PIR sensor.
+     * @return The unique identifier of the PIR sensor.
+     */
+    int get_id() const;
+
     /**
      * @brief Sets the digital pin connected to the PIR sensor.
      * @param port The GPIO pin number.

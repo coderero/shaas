@@ -1,18 +1,3 @@
-/**
- * @file security.h
- * @brief Defines the Security class for handling RFID-based access control.
- *
- * This file contains the declaration of the `Security` class, which integrates
- * the RFID module, locking mechanism, and an authentication interface.
- * The class provides functions for initializing the system, reading RFID cards,
- * and registering new UID entries.
- *
- * @author
- * Mohit Sharma
- * @date
- * April 11, 2025
- */
-
 #ifndef SECURITY_H
 #define SECURITY_H
 
@@ -22,61 +7,41 @@
 
 /**
  * @class Security
- * @brief Manages security operations using RFID and locking mechanisms.
- *
- * The `Security` class provides a high-level interface to integrate the RFID reader,
- * a physical lock, and an authentication system. It enables operations such as
- * card reading and UID registration while abstracting the underlying hardware
- * and validation mechanisms.
+ * @brief Integrates RFID, lock, and authentication in a non-blocking secure system.
  */
 class Security
 {
 private:
-    RFID *rfid;                        ///< Pointer to the RFID module.
-    Lock *lock;                        ///< Pointer to the lock module.
-    IRFIDAuthenticator *authenticator; ///< Pointer to the RFID authentication interface.
+    RFID *rfid;                        ///< Pointer to RFID module
+    Lock *lock;                        ///< Pointer to Lock module
+    IRFIDAuthenticator *authenticator; ///< Interface to authentication logic
+
+    bool _awaiting_auth_response = false;
+    bool _awaiting_register_response = false;
+    uint32_t _operation_start_time = 0;
+    static constexpr uint32_t TIMEOUT = 5000; // Timeout for async responses
 
 public:
-    /**
-     * @brief Default constructor for the Security class.
-     */
     Security();
-
-    /**
-     * @brief Destructor for the Security class.
-     */
     ~Security();
 
-    /**
-     * @brief Initializes the security system with the given authenticator.
-     *
-     * This method sets up internal references and prepares the system
-     * for operation.
-     *
-     * @param authenticator A pointer to an implementation of IRFIDAuthenticator.
-     * @return true if initialization is successful, false otherwise.
-     */
     bool init(IRFIDAuthenticator *authenticator);
 
     /**
-     * @brief Reads a card from the RFID module and performs authentication.
-     *
-     * This method checks for a card, retrieves the UID, and delegates
-     * the authentication to the configured authenticator.
-     *
-     * @return true if authentication is successful, false otherwise.
+     * @brief Initiates card read and async authentication (non-blocking).
+     * Call `handle()` to monitor result.
      */
     bool read_card();
 
     /**
-     * @brief Registers a UID using the connected authenticator.
-     *
-     * This method enables the system to register new UIDs into the authenticator
-     * (e.g., storing them in a database or in memory).
-     *
-     * @return true if UID is successfully registered, false otherwise.
+     * @brief Starts async UID registration. Requires periodic `handle()` call.
      */
-    bool register_uid();
+    void register_uid();
+
+    /**
+     * @brief Handles async state transitions for auth and lock operations.
+     */
+    void handle();
 };
 
 #endif // SECURITY_H

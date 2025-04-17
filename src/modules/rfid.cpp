@@ -6,8 +6,7 @@
  * @brief Constructor — does not perform hardware initialization.
  */
 RFID::RFID()
-    : rfid(nullptr),
-      authenticator(nullptr)
+    : rfid(nullptr)
 {
 }
 
@@ -35,10 +34,8 @@ RFID::~RFID()
  * @param authenticator Pointer to an instance implementing IRFIDAuthenticator.
  * @return true if initialization was successful.
  */
-bool RFID::init(IRFIDAuthenticator *authenticator)
+bool RFID::init()
 {
-    this->authenticator = authenticator;
-
     SPI.begin();
     // Use fixed pins: SS = 4, RST = 2
     rfid = new MFRC522(4, 2);
@@ -57,7 +54,7 @@ bool RFID::init(IRFIDAuthenticator *authenticator)
  */
 bool RFID::read_card()
 {
-    if (!rfid || !authenticator)
+    if (!rfid)
     {
         return false;
     }
@@ -68,38 +65,9 @@ bool RFID::read_card()
     }
 
     // Pass raw UID bytes to the authenticator
-    bool is_authenticated = authenticator->is_authenticated(rfid->uid.uidByte, rfid->uid.size);
 
     rfid->PICC_HaltA();
     rfid->PCD_StopCrypto1();
 
-    return is_authenticated;
-}
-
-/**
- * @brief Registers a new UID with the authenticator.
- *
- * Reads the UID of a card and registers it with the provided IRFIDAuthenticator.
- *
- * @return true if registration was successful; false otherwise.
- */
-bool RFID::register_card()
-{
-    if (!rfid || !authenticator)
-    {
-        return false;
-    }
-
-    if (!rfid->PICC_IsNewCardPresent() || !rfid->PICC_ReadCardSerial())
-    {
-        return false;
-    }
-
-    // Pass raw UID bytes to the authenticator
-    bool is_registered = authenticator->register_uid(rfid->uid.uidByte, rfid->uid.size);
-
-    rfid->PICC_HaltA();
-    rfid->PCD_StopCrypto1();
-
-    return is_registered;
+    return true;
 }

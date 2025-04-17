@@ -39,6 +39,10 @@ public:
      */
     virtual bool register_uid(const byte *uid, byte length) = 0;
 
+    virtual bool is_response_available() = 0;
+    virtual bool was_last_auth_successful() = 0;
+    virtual bool was_last_register_successful() = 0;
+
     /**
      * @brief Virtual destructor.
      *

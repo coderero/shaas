@@ -69,6 +69,20 @@ bool ConfigEngine::save_config()
 }
 
 /**
+ * @brief Sets the default configuration.
+ *
+ * @return true if set successfully, false otherwise.
+ */
+bool ConfigEngine::set_default_config()
+{
+    // Set default values for all configurations
+    *_config = default_config;
+
+    // Save the default configuration to EEPROM
+    return save_config();
+}
+
+/**
  * @brief Adds a new climate configuration.
  *
  * @param c Climate configuration to add.

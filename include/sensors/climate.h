@@ -16,6 +16,7 @@
 class Climate
 {
 private:
+    int id;                ///< Unique identifier for the climate module
     int d_port;            ///< Mux channel for the DHT sensor
     uint8_t a_port;        ///< Mux channel for the air quality sensor
     int signal_pin;        ///< Digital GPIO pin connected to the DHT sensor
@@ -47,7 +48,7 @@ public:
      * @param mux Pointer to an existing Mux instance
      * @return true if both sensors initialized successfully, false otherwise
      */
-    bool init(int d_port, const uint8_t &a_port, int signal_pin, Mux *mux);
+    bool init(int id, int d_port, const uint8_t &a_port, int signal_pin, Mux *mux);
 
     /**
      * @brief Reads and updates the sensor values (temperature, humidity, AQI).
@@ -74,6 +75,12 @@ public:
      * @return int AQI value
      */
     int get_air_quality_index() const;
+
+    /**
+     * @brief Returns the unique identifier for this climate module.
+     * @return int ID of the climate module
+     */
+    int get_id() const;
 
     /**
      * @brief Sets the DHT sensor mux channel.
