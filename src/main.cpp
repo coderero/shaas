@@ -77,32 +77,19 @@
 // LDR _ldrs[MAX_LDR];
 
 // config_data global_config = {
-//     .version = 1,
-//     .size = sizeof(config_data),
-//     .climate_size = 1,
-//     .ldr_size = 0,
-//     .motion_size = 1,
-//     .relay_size = 0,
-//     .climates = {
-//         {
-//             .id = 1,
-//             .dht22_port = 0,
-//             .aqi_port = A0,
-//             .has_buzzer = false,
-//             .buzzer_port = 0,
-//         },
-//     },
-//     .ldrs = {},
-//     .motions = {
-//         {
-//             .id = 1,
-//             .port = 1,
-//             .relay_channel = 0,
-//         },
-//     },
-//     .relays = {},
+//     1,                   // version
+//     sizeof(config_data), // size
+//     0,                   // climate_size
+//     0,                   // ldr_size
+//     0,                   // motion_size
+//     0,                   // relay_size
+//     {                    // climates
+//      {1, 0, A0, false, 0}},
+//     {}, // ldrs
+//     {   // motions
+//      {1, 1, 0}},
+//     {} // relays
 // };
-
 // config_data *_config = &global_config;
 
 // void setup()
@@ -148,17 +135,15 @@
 //     _motion[i].init(_config->motions[i].id, &_mux);
 //     _motion[i].set_port(_config->motions[i].port);
 //   }
-//
+
 //   for (int i = 0; i < _config->ldr_size; i++)
 //   {
-//   _ldrs[i].init(_config->ldrs[i].id, _config->ldrs[i].port, _config->ldrs[i].threshold);
-//   Serial.print("LDR ID: ");
-//   Serial.println(_ldrs[i].get_id());
-//   Serial.print("LDR Port: ");
-//   Serial.println(_ldrs[i].get_port());
-//   Serial.print("LDR Threshold: ");
-//   Serial.println(_ldrs[i].get_threshold());
-// }
+//     _ldrs[i].init(_config->ldrs[i].id, _config->ldrs[i].port);
+//     Serial.print("LDR ID: ");
+//     Serial.println(_ldrs[i].get_id());
+//     Serial.print("LDR Port: ");
+//     Serial.println(_ldrs[i].get_id());
+//   }
 // }
 
 // void loop()
@@ -205,45 +190,18 @@
 //   }
 // }
 
-#include <communication/mqtt_manager.h>
+#include <services/system_monitor.h>
 
-MQTTManager mqtt_manager;
+SystemMonitor monitor;
 
 void setup()
 {
-  mqtt_manager.begin("SmartHome-IOT", 10000);
+  Serial.begin(115200);
+  monitor.init();
 }
 
 void loop()
 {
-  mqtt_manager.loop();
-
-  if (!mqtt_manager.is_connected())
-  {
-    // reset the wifi rom
-    if (Serial.available())
-    {
-      char c = Serial.read();
-      if (c == 'r')
-      {
-        for (int i = 0; i < CRED_EEPROM_SIZE; i++)
-        {
-          EEPROM.write(CRED_EEPROM_ADDR + i, 0);
-        }
-
-        Serial.println("EEPROM reset done. Please restart the device.");
-      }
-    }
-    mqtt_manager.retry();
-    return;
-  }
-
-  // Example: Publish a status message every 10 seconds
-  static unsigned long last_publish = 0;
-  if (millis() - last_publish >= 10000 && mqtt_manager.is_connected())
-  {
-    String status_topic = "device/SmartHome-IOT/status"; // Note: device_id not directly accessible
-    mqtt_manager.publish(status_topic, "Device is online");
-    last_publish = millis();
-  }
+  monitor.update();
+  delay(100);
 }

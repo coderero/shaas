@@ -6,47 +6,19 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(transporter_Timestamp, transporter_Timestamp, AUTO)
+PB_BIND(transporter_UID, transporter_UID, AUTO)
 
 
-PB_BIND(transporter_Surrondings, transporter_Surrondings, AUTO)
+PB_BIND(transporter_RegisterRequest, transporter_RegisterRequest, AUTO)
 
 
-PB_BIND(transporter_SurrondingsList, transporter_SurrondingsList, AUTO)
+PB_BIND(transporter_RegisterResponse, transporter_RegisterResponse, AUTO)
 
 
-PB_BIND(transporter_Motion, transporter_Motion, AUTO)
+PB_BIND(transporter_RevokeRequest, transporter_RevokeRequest, AUTO)
 
 
-PB_BIND(transporter_MotionList, transporter_MotionList, AUTO)
+PB_BIND(transporter_RfidEnvelope, transporter_RfidEnvelope, AUTO)
 
 
-PB_BIND(transporter_LDR, transporter_LDR, AUTO)
-
-
-PB_BIND(transporter_LDRList, transporter_LDRList, AUTO)
-
-
-PB_BIND(transporter_SecurityRequest, transporter_SecurityRequest, AUTO)
-
-
-PB_BIND(transporter_SecurityResponse, transporter_SecurityResponse, AUTO)
-
-
-PB_BIND(transporter_Config, transporter_Config, AUTO)
-
-
-PB_BIND(transporter_ConfigList, transporter_ConfigList, AUTO)
-
-
-
-
-
-#ifndef PB_CONVERT_DOUBLE_FLOAT
-/* On some platforms (such as AVR), double is really float.
- * To be able to encode/decode double on these platforms, you need.
- * to define PB_CONVERT_DOUBLE_FLOAT in pb.h or compiler command line.
- */
-PB_STATIC_ASSERT(sizeof(double) == 8, DOUBLE_MUST_BE_8_BYTES)
-#endif
 

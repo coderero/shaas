@@ -1,8 +1,6 @@
 #ifndef RFID_H
 #define RFID_H
 
-#include <interfaces/IRFIDAuthenticator.h>
-
 #include <MFRC522.h>
 
 /**

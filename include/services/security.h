@@ -3,44 +3,32 @@
 
 #include <modules/rfid.h>
 #include <devices/lock.h>
-#include <interfaces/IRFIDAuthenticator.h>
+#include <services/whitelist_manager.h>
 
 /**
  * @class Security
- * @brief Integrates RFID, lock, and authentication in a non-blocking secure system.
+ * @brief Integrates RFID, lock, and whitelist manager in a non-blocking secure system.
  */
 class Security
 {
 private:
-    RFID *rfid;                        ///< Pointer to RFID module
-    Lock *lock;                        ///< Pointer to Lock module
-    IRFIDAuthenticator *authenticator; ///< Interface to authentication logic
+    byte *uid;                   ///< Array to store UID
+    RFID *rfid;                  ///< Pointer to RFID module
+    Lock *lock;                  ///< Pointer to Lock module
+    WhiteListManager *whitelist; ///< Pointer to WhiteListManager for authentication/registration
 
     bool _awaiting_auth_response = false;
     bool _awaiting_register_response = false;
+    bool _register_mode = false; ///< Flag for registration mode
     uint32_t _operation_start_time = 0;
     static constexpr uint32_t TIMEOUT = 5000; // Timeout for async responses
 
 public:
-    Security();
+    Security(WhiteListManager *whitelist);
     ~Security();
 
-    bool init(IRFIDAuthenticator *authenticator);
-
-    /**
-     * @brief Initiates card read and async authentication (non-blocking).
-     * Call `handle()` to monitor result.
-     */
-    bool read_card();
-
-    /**
-     * @brief Starts async UID registration. Requires periodic `handle()` call.
-     */
-    void register_uid();
-
-    /**
-     * @brief Handles async state transitions for auth and lock operations.
-     */
+    bool init(WhiteListManager *whitelist);
+    void enable_register_mode();
     void handle();
 };
 

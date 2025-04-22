@@ -1,6 +1,10 @@
 #include <services/security.h>
+#include <Arduino.h>
 
-Security::Security() : rfid(nullptr), lock(nullptr), authenticator(nullptr) {}
+Security::Security(WhiteListManager *whitelist)
+    : whitelist(whitelist), uid(nullptr)
+{
+}
 
 Security::~Security()
 {
@@ -8,105 +12,115 @@ Security::~Security()
     delete lock;
 }
 
-bool Security::init(IRFIDAuthenticator *authenticator)
+bool Security::init(WhiteListManager *whitelist)
 {
-    if (!authenticator)
-        return false;
-
-    this->authenticator = authenticator;
+    this->whitelist = whitelist;
 
     rfid = new RFID();
-    if (!rfid->init())
-        return false;
-
     lock = new Lock();
-    return lock->init();
+
+    if (!rfid || !lock)
+    {
+        Serial.println("Security: Failed to allocate RFID or Lock");
+        return false;
+    }
+
+    if (!rfid->init())
+    {
+        Serial.println("Security: RFID initialization failed");
+        return false;
+    }
+
+    if (!lock->init())
+    {
+        Serial.println("Security: Lock initialization failed");
+        return false;
+    }
+
+    Serial.println("Security: Initialized successfully");
+    return true;
 }
 
-bool Security::read_card()
+void Security::enable_register_mode()
 {
-    if (!rfid || !authenticator || _awaiting_auth_response || _awaiting_register_response)
-        return false; // Already processing
-
-    if (rfid->read_card())
+    if (_awaiting_auth_response || _awaiting_register_response)
     {
-        if (authenticator->is_authenticated(rfid->get_uid(), rfid->get_uid_length()))
+        Serial.println("Security: Operation in progress, cannot enable register mode");
+        return;
+    }
+    _register_mode = true;
+    Serial.println("Security: Entered registration mode");
+}
+
+void Security::handle()
+{
+    lock->handle();
+    whitelist->update();
+
+    if (whitelist->get_response())
+    {
+        if (whitelist->get_mode() == WhiteListMode::REGISTRATION)
         {
-            _awaiting_auth_response = true;
-            _operation_start_time = millis();
-            return true;
+            _awaiting_register_response = false;
+            _register_mode = false;
+            Serial.println("Security: Registration completed");
         }
         else
         {
-            // Optionally add feedback for failed authentication
+            _awaiting_auth_response = false;
+            Serial.println("Security: Authentication completed");
         }
+        whitelist->reset_response();
+    }
+
+    if (_awaiting_auth_response)
+    {
+        if (lock->get_lock_status() == LOCK)
         {
-            _awaiting_auth_response = true;
-            _operation_start_time = millis();
-            return true;
+            _awaiting_auth_response = false;
+        }
+        else if (millis() - _operation_start_time > TIMEOUT)
+        {
+            _awaiting_auth_response = false;
+            lock->lock();
         }
     }
-    return false;
-}
 
-void Security::register_uid()
-{
-    if (!rfid || !authenticator || _awaiting_register_response)
-        return;
-
-    if (rfid->read_card())
+    if (_awaiting_register_response)
     {
-        if (authenticator->register_uid(rfid->get_uid(), rfid->get_uid_length()))
+        if (millis() - _operation_start_time > TIMEOUT)
+        {
+            _awaiting_register_response = false;
+            _register_mode = false;
+            Serial.println("Security: Registration timeout, returning to auth mode");
+        }
+    }
+
+    if (!_awaiting_auth_response && !_awaiting_register_response && rfid->read_card())
+    {
+        uint8_t *uid = rfid->get_uid();
+        size_t len = rfid->get_uid_length();
+
+        whitelist->set_uid(uid, len);
+
+        if (whitelist->get_mode() == WhiteListMode::REGISTRATION)
         {
             _awaiting_register_response = true;
             _operation_start_time = millis();
         }
         else
         {
-            // Optionally add feedback for failed registration
-        }
-    }
-}
-
-void Security::handle()
-{
-    if (lock)
-        lock->handle();
-
-    // Handle asynchronous authentication result
-    if (_awaiting_auth_response)
-    {
-        if (authenticator->is_response_available() ||
-            (millis() - _operation_start_time >= TIMEOUT))
-        {
-            _awaiting_auth_response = false;
-
-            if (authenticator->was_last_auth_successful())
+            if (whitelist->is_whitelisted(uid, len))
             {
-                lock->unlock(); // Unlock on success
+                if (lock->unlock())
+                {
+                    _awaiting_auth_response = true;
+                    _operation_start_time = millis();
+                }
             }
             else
             {
-                // Optionally add feedback for failed authentication
-            }
-        }
-    }
-
-    // Handle asynchronous registration result
-    if (_awaiting_register_response)
-    {
-        if (authenticator->is_response_available() ||
-            (millis() - _operation_start_time >= TIMEOUT))
-        {
-            _awaiting_register_response = false;
-
-            if (authenticator->was_last_register_successful())
-            {
-                lock->lock(); // Lock only on successful registration
-            }
-            else
-            {
-                // Optionally log or flash error for failed registration
+                lock->lock();
             }
         }
     }

@@ -1,36 +1,69 @@
+// --- MQTTManager.h ---
 #ifndef MQTT_MANAGER_H
 #define MQTT_MANAGER_H
-
-#include <ArduinoMQTTClient.h>
-#include <WiFiS3.h>
-#include <communication/credentials.h>
-#include <communication/wifi_manager.h>
+#include "config.h"
+#include <ArduinoMqttClient.h>
+#include <WiFi.h>
 
 class MQTTManager
 {
-public:
-    MQTTManager();
-    void begin(const char *device_name, uint32_t timeout_ms = 15000);
-    void loop();
-    bool is_connected() const;
-    void publish(const String &topic, const String &message);
-    void subscribe(const String &topic);
-    void retry();
-
 private:
-    Credentials _credentials;
-    WiFiManager _wifi_manager;
-    WiFiClient _wifi_client;
-    MqttClient _mqtt_client; // Changed from MQTTClient to MqttClient
-    String _client_id;
-    bool _mqtt_connected;
-    bool _last_connect_failed; // Added to track last connection failure
-    unsigned long _last_connect_attempt = 0;
-    unsigned long _reconnect_interval_ms = 5000;
-    static MQTTManager *_instance; // Static instance for callback
+    MQTTConfig config;
+    WiFiClient wifiClient;
+    MqttClient mqttClient;
 
-    void connect_to_mqtt();
-    static void on_message_received(int message_size);
+public:
+    MQTTManager(const MQTTConfig &cfg) : config(cfg), mqttClient(wifiClient) {}
+
+    void begin()
+    {
+        mqttClient.setId("arduinoClient");
+        mqttClient.setUsernamePassword(config.username.c_str(), config.password.c_str());
+        mqttClient.setKeepAliveInterval(60000);
+    }
+
+    bool update()
+    {
+        if (!mqttClient.connected())
+        {
+            return mqttClient.connect(config.broker.c_str(), config.port);
+        }
+        mqttClient.poll();
+        return true;
+    }
+
+    bool is_connected()
+    {
+        return mqttClient.connected();
+    }
+
+    void publish(const char *topic, const char *payload)
+    {
+        mqttClient.beginMessage(topic);
+        mqttClient.print(payload);
+        mqttClient.endMessage();
+    }
+
+    void publish(const char *topic, const uint8_t *payload, size_t length)
+    {
+        mqttClient.beginMessage(topic);
+        mqttClient.write(payload, length);
+        mqttClient.endMessage();
+    }
+
+    void subscribe(const char *topic)
+    {
+        mqttClient.subscribe(topic);
+    }
+
+    void set_callback(void (*callback)(int messageSize))
+    {
+        mqttClient.onMessage(callback);
+    }
+
+    MqttClient &getMqttClient()
+    {
+        return mqttClient;
+    }
 };
-
 #endif

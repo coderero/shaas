@@ -53,6 +53,7 @@ typedef struct _m
 {
     uint8_t id;            ///< Unique identifier
     uint8_t port;          ///< PIR sensor pin
+    uint8_t relay_id;      ///< ID of the associated relay
     uint8_t relay_channel; ///< Channel index of associated relay
 } motion;
 
@@ -62,10 +63,8 @@ typedef struct _m
  */
 typedef struct _r
 {
-    uint8_t id;         ///< Unique identifier
-    int type;           ///< Type of relay (HEAVY or LIGHT)
-    uint8_t lower_port; ///< Control pin 1
-    uint8_t upper_port; ///< Control pin 2
+    uint8_t id; ///< Unique identifier
+    int type;   ///< Type of relay (HEAVY or LIGHT)
 } relay;
 
 /**
