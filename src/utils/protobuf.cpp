@@ -43,17 +43,43 @@ bool decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg)
 bool msg_callback(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     char *id_buffer = (char *)*arg;
-
     transporter_RegisterRequest req = transporter_RegisterRequest_init_zero;
 
-    req.id.funcs.decode = decode_string;
-    req.id.arg = id_buffer;
-
-    if (!pb_decode(stream, transporter_RegisterRequest_fields, &req))
+    switch (field->tag)
     {
-        Serial.print("Failed to decode RegisterRequest: ");
-        Serial.println(PB_GET_ERROR(stream));
-        return false;
+    case transporter_RfidEnvelope_register_request_tag:
+
+        req.id.funcs.decode = decode_string;
+        req.id.arg = id_buffer;
+
+        if (!pb_decode(stream, transporter_RegisterRequest_fields, &req))
+        {
+            Serial.print("Failed to decode RegisterRequest: ");
+            Serial.println(PB_GET_ERROR(stream));
+            return false;
+        }
+
+        return true;
+        break;
+    case transporter_RfidEnvelope_register_response_tag:
+        return true;
+        break;
+    case transporter_RfidEnvelope_revoke_request_tag:
+        return true;
+        break;
     }
-    return true;
+    return false;
+}
+
+bool config_callback(pb_istream_t *stream, const pb_field_t *field, void **arg)
+{
+    switch (field->tag)
+    {
+    case transporter_ConfigTopic_climate_tag:
+
+        break;
+
+    default:
+        break;
+    }
 }

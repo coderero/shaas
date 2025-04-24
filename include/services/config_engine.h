@@ -13,14 +13,13 @@
 #include <EEPROM.h>
 
 // EEPROM configuration
-#define EEPROM_SIZE 1024 ///< Total EEPROM size in bytes
-#define EEPROM_ADDRESS 0 ///< Starting address for config data in EEPROM
+#define EEPROM_SIZE 1024    ///< Total EEPROM size in bytes
+#define EEPROM_ADDRESS 1024 ///< Starting address for config data in EEPROM
 
-// Maximum limits for each sensor/actuator type
-#define MAX_CLIMATE 10
-#define MAX_LDR 10
-#define MAX_MOTION 10
-#define MAX_RELAY 10
+#define MAX_CLIMATE 2
+#define MAX_LDR 2
+#define MAX_MOTION 4
+#define MAX_RELAY 2
 
 /**
  * @struct climate
@@ -87,16 +86,17 @@ typedef struct _config_data
 
 // Default configuration structure
 const config_data default_config = {
-    .version = 1,
-    .size = sizeof(config_data),
-    .climate_size = 0,
-    .ldr_size = 0,
-    .motion_size = 0,
-    .relay_size = 0,
-    .climates = {},
-    .ldrs = {},
-    .motions = {},
-    .relays = {}};
+    1,                   // version
+    sizeof(config_data), // size
+    0,                   // climate_size
+    0,                   // ldr_size
+    0,                   // motion_size
+    0,                   // relay_size
+    {},                  // climates
+    {},                  // ldrs
+    {},                  // motions
+    {}                   // relays
+};
 
 /**
  * @class ConfigEngine
@@ -142,6 +142,14 @@ public:
      * @return true if valid, false otherwise.
      */
     bool set_default_config();
+
+    /**
+     * @brief Sets the full configuration.
+     * @param config Configuration data to set.
+     * @return true if successful, false otherwise.
+     * @note This function overwrites the existing configuration.
+     */
+    bool set_full_config(config_data config);
 
     /**
      * @brief Adds or updates a climate configuration.

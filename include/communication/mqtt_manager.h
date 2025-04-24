@@ -58,6 +58,7 @@ public:
 
     void set_callback(void (*callback)(int messageSize))
     {
+        Serial.println("MQTTManager: Setting callback");
         mqttClient.onMessage(callback);
     }
 

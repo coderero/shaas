@@ -12,4 +12,6 @@ bool decode_string(pb_istream_t *stream, const pb_field_t *field, void **arg);
 
 bool msg_callback(pb_istream_t *stream, const pb_field_t *field, void **arg);
 
+bool config_callback(pb_istream_t *stream, const pb_field_t *field, void **arg);
+
 #endif // PROTOBUF_H

@@ -55,23 +55,6 @@ void Security::enable_register_mode()
 void Security::handle()
 {
     lock->handle();
-    whitelist->update();
-
-    if (whitelist->get_response())
-    {
-        if (whitelist->get_mode() == WhiteListMode::REGISTRATION)
-        {
-            _awaiting_register_response = false;
-            _register_mode = false;
-            Serial.println("Security: Registration completed");
-        }
-        else
-        {
-            _awaiting_auth_response = false;
-            Serial.println("Security: Authentication completed");
-        }
-        whitelist->reset_response();
-    }
 
     if (_awaiting_auth_response)
     {
@@ -92,7 +75,6 @@ void Security::handle()
         {
             _awaiting_register_response = false;
             _register_mode = false;
-            Serial.println("Security: Registration timeout, returning to auth mode");
         }
     }
 

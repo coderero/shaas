@@ -29,3 +29,60 @@ message RfidEnvelope {
     RevokeRequest revoke_request = 5;
   }
 }
+
+enum RelayType {
+  RELAY_HEAVY = 0;
+  RELAY_LIGHT = 1;
+}
+
+message Climate {
+  uint32 id = 1;
+  uint32 dht22_port = 2;
+  uint32 aqi_port = 3;
+  bool has_buzzers = 4;
+  uint32 buzzer_port = 5;
+}
+
+message LDR {
+  uint32 id = 1;
+  uint32 port = 2;
+}
+
+message Motion {
+  uint32 id = 1;
+  uint32 port = 2;
+  uint32 relay_id = 3;
+  uint32 relay_channel = 4;
+}
+
+message Relay {
+  uint32 id = 1;
+  RelayType type = 2;
+}
+
+message FullConfig {
+  repeated Climate climates = 1 [
+    (nanopb).max_count = 2
+  ];
+  repeated LDR ldrs = 2 [
+    (nanopb).max_count = 2
+  ];
+  repeated Motion motions = 3 [
+    (nanopb).max_count = 4
+  ];
+  repeated Relay relays = 4 [
+    (nanopb).max_count = 2
+  ];
+}
+
+message ConfigTopic {
+  oneof payload {
+    Climate climate = 2;
+    LDR ldr = 3;
+    Motion motion = 4;
+    Relay relay = 5;
+    FullConfig full_config = 6;
+  }
+}
+
+

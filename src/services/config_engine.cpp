@@ -83,6 +83,25 @@ bool ConfigEngine::set_default_config()
 }
 
 /**
+ * @brief Sets the full configuration.
+ *
+ * @param config Configuration data to set.
+ * @return true if successful, false otherwise.
+ */
+bool ConfigEngine::set_full_config(config_data config)
+{
+    // Validate the size of the new config
+    if (config.size != sizeof(config_data))
+        return false;
+
+    // Copy the new config data
+    *_config = config;
+
+    // Save the new configuration to EEPROM
+    return save_config();
+}
+
+/**
  * @brief Adds a new climate configuration.
  *
  * @param c Climate configuration to add.
@@ -155,7 +174,7 @@ climate ConfigEngine::get_climate_config(uint8_t id)
         if (_config->climates[i].id == id)
             return _config->climates[i];
     }
-    return {0}; // Default-initialized if not found
+    return {0};
 }
 
 /**

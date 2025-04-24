@@ -21,7 +21,7 @@ private:
     bool _awaiting_register_response = false;
     bool _register_mode = false; ///< Flag for registration mode
     uint32_t _operation_start_time = 0;
-    static constexpr uint32_t TIMEOUT = 5000; // Timeout for async responses
+    static constexpr uint32_t TIMEOUT = 3000; // Timeout for async responses
 
 public:
     Security(WhiteListManager *whitelist);

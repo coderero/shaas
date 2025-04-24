@@ -21,4 +21,24 @@ PB_BIND(transporter_RevokeRequest, transporter_RevokeRequest, AUTO)
 PB_BIND(transporter_RfidEnvelope, transporter_RfidEnvelope, AUTO)
 
 
+PB_BIND(transporter_Climate, transporter_Climate, AUTO)
+
+
+PB_BIND(transporter_LDR, transporter_LDR, AUTO)
+
+
+PB_BIND(transporter_Motion, transporter_Motion, AUTO)
+
+
+PB_BIND(transporter_Relay, transporter_Relay, AUTO)
+
+
+PB_BIND(transporter_FullConfig, transporter_FullConfig, AUTO)
+
+
+PB_BIND(transporter_ConfigTopic, transporter_ConfigTopic, AUTO)
+
+
+
+
 
