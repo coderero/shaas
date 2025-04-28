@@ -19,7 +19,6 @@
 #define MAX_CLIMATE 2
 #define MAX_LDR 2
 #define MAX_MOTION 4
-#define MAX_RELAY 2
 
 /**
  * @struct climate
@@ -50,21 +49,11 @@ typedef struct _l
  */
 typedef struct _m
 {
-    uint8_t id;            ///< Unique identifier
-    uint8_t port;          ///< PIR sensor pin
-    uint8_t relay_id;      ///< ID of the associated relay
-    uint8_t relay_channel; ///< Channel index of associated relay
+    uint8_t id;         ///< Unique identifier
+    uint8_t port;       ///< PIR sensor pin
+    uint8_t relay_port; ///< ID of the associated relay
+    uint8_t relay_type; ///< Channel index of associated relay
 } motion;
-
-/**
- * @struct relay
- * @brief Configuration structure for relay modules.
- */
-typedef struct _r
-{
-    uint8_t id; ///< Unique identifier
-    int type;   ///< Type of relay (HEAVY or LIGHT)
-} relay;
 
 /**
  * @struct config_data
@@ -81,7 +70,6 @@ typedef struct _config_data
     climate climates[MAX_CLIMATE]; ///< Climate config array
     ldr ldrs[MAX_LDR];             ///< LDR config array
     motion motions[MAX_MOTION];    ///< Motion sensor config array
-    relay relays[MAX_RELAY];       ///< Relay config array
 } config_data;
 
 // Default configuration structure
@@ -95,7 +83,6 @@ const config_data default_config = {
     {},                  // climates
     {},                  // ldrs
     {},                  // motions
-    {}                   // relays
 };
 
 /**
@@ -173,13 +160,6 @@ public:
     bool set_motion_config(motion motion);
 
     /**
-     * @brief Adds or updates a relay configuration.
-     * @param relay Relay struct to add or update.
-     * @return true if added or updated, false if list is full.
-     */
-    bool set_relay_config(relay relay);
-
-    /**
      * @brief Retrieves a climate configuration by ID.
      * @param id Unique identifier of the climate config.
      * @return climate struct (returns default if not found).
@@ -199,13 +179,6 @@ public:
      * @return motion struct (returns default if not found).
      */
     motion get_motion_config(uint8_t id);
-
-    /**
-     * @brief Retrieves a relay configuration by ID.
-     * @param id Unique identifier of the relay config.
-     * @return relay struct (returns default if not found).
-     */
-    relay get_relay_config(uint8_t id);
 
     /**
      * @brief Returns a pointer to the internal configuration data.

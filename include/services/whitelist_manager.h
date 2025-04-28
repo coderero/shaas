@@ -3,7 +3,7 @@
 
 #define W_EEPROM_SIZE 1024
 #define W_EEPROM_ADDR 512
-#define MAX_UID_LENGTH 10
+#define MAX_UID_LENGTH 8
 #define MAX_WHITELIST_SIZE 5
 
 #include <functional>
@@ -37,10 +37,11 @@ class WhiteListManager
 public:
     void init(MQTTManager *mqtt_manager, const String &device_uid);
     void update();
-    void set_uid(uint8_t *uid, size_t length);
     bool is_whitelisted(uint8_t *uid, size_t length);
-    void set_mode_registration();
     void reset_response() { awating_response = false; }
+    void delete_uid(uint8_t *uid, size_t length);
+    void set_uid(uint8_t *uid, size_t length);
+    void set_mode_registration();
     void set_registration_request_id(const String &id) { registration_request_id = id; }
 
     bool get_response() const { return awating_response; }

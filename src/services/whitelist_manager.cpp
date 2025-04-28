@@ -25,6 +25,74 @@ void WhiteListManager::set_uid(uint8_t *uid, size_t length)
     new_uid_received = true;
 }
 
+void WhiteListManager::delete_uid(uint8_t *uid, size_t length)
+{
+    // Use the exact same comparison logic as is_whitelisted
+    if (!uid || length == 0 || length > MAX_UID_LENGTH)
+    {
+        Serial.println("WhiteListManager: Invalid UID parameters for deletion");
+        return;
+    }
+
+    Serial.print("Attempting to delete UID: ");
+    for (size_t i = 0; i < length; i++)
+    {
+        Serial.print(uid[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
+
+    int index = W_EEPROM_ADDR;
+    bool found = false;
+
+    for (int i = 0; i < MAX_WHITELIST_SIZE; ++i)
+    {
+        uint8_t len = EEPROM.read(index);
+
+        if (len == 0xFF || len == 0)
+        {
+            break;
+        }
+
+        // Only check if lengths match
+        if (len == length)
+        {
+            bool match = true;
+
+            // Compare each byte
+            for (size_t j = 0; j < len; ++j)
+            {
+                uint8_t read_byte = EEPROM.read(index + 1 + j);
+                if (read_byte != uid[j])
+                {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match)
+            {
+                Serial.print("Found matching UID at index ");
+                Serial.println(index);
+
+                // Mark this entry as deleted
+                EEPROM.write(index, 0);
+
+#if defined(ESP8266) || defined(ESP32)
+                EEPROM.commit();
+#endif
+
+                Serial.println("UID deleted successfully");
+                return;
+            }
+        }
+
+        // Move to next entry
+        index += 1 + len;
+    }
+
+    Serial.println("UID not found in whitelist, nothing to delete");
+}
 void WhiteListManager::update()
 {
     if (!new_uid_received)

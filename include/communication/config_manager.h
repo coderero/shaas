@@ -84,6 +84,80 @@ public:
         return true;
     }
 
+    void update_config(const Config &config)
+    {
+        Config current_config;
+        bool loaded = load(current_config);
+
+        if (!loaded)
+        {
+            // If there's no valid configuration, just save the new one
+            StaticJsonDocument<EEPROM_SIZE> doc;
+            doc["device_uid"] = config.device_uid;
+            doc["wifi"]["ssid"] = config.wifi.ssid;
+            doc["wifi"]["password"] = config.wifi.password;
+            doc["mqtt"]["broker"] = config.mqtt.broker;
+            doc["mqtt"]["port"] = config.mqtt.port;
+            doc["mqtt"]["topic"] = config.mqtt.topic;
+            doc["mqtt"]["username"] = config.mqtt.username;
+            doc["mqtt"]["password"] = config.mqtt.password;
+
+            String json;
+            serializeJson(doc, json);
+            save(json);
+            return;
+        }
+
+        // Update only non-empty fields that differ from current values
+        if (!config.device_uid.isEmpty() && config.device_uid != current_config.device_uid)
+        {
+            current_config.device_uid = config.device_uid;
+        }
+        if (!config.wifi.ssid.isEmpty() && config.wifi.ssid != current_config.wifi.ssid)
+        {
+            current_config.wifi.ssid = config.wifi.ssid;
+        }
+        if (!config.wifi.password.isEmpty() && config.wifi.password != current_config.wifi.password)
+        {
+            current_config.wifi.password = config.wifi.password;
+        }
+        if (!config.mqtt.broker.isEmpty() && config.mqtt.broker != current_config.mqtt.broker)
+        {
+            current_config.mqtt.broker = config.mqtt.broker;
+        }
+        if (config.mqtt.port != 0 && config.mqtt.port != current_config.mqtt.port)
+        {
+            current_config.mqtt.port = config.mqtt.port;
+        }
+        if (!config.mqtt.topic.isEmpty() && config.mqtt.topic != current_config.mqtt.topic)
+        {
+            current_config.mqtt.topic = config.mqtt.topic;
+        }
+        if (!config.mqtt.username.isEmpty() && config.mqtt.username != current_config.mqtt.username)
+        {
+            current_config.mqtt.username = config.mqtt.username;
+        }
+        if (!config.mqtt.password.isEmpty() && config.mqtt.password != current_config.mqtt.password)
+        {
+            current_config.mqtt.password = config.mqtt.password;
+        }
+
+        // Save the updated configuration
+        StaticJsonDocument<EEPROM_SIZE> doc;
+        doc["device_uid"] = current_config.device_uid;
+        doc["wifi"]["ssid"] = current_config.wifi.ssid;
+        doc["wifi"]["password"] = current_config.wifi.password;
+        doc["mqtt"]["broker"] = current_config.mqtt.broker;
+        doc["mqtt"]["port"] = current_config.mqtt.port;
+        doc["mqtt"]["topic"] = current_config.mqtt.topic;
+        doc["mqtt"]["username"] = current_config.mqtt.username;
+        doc["mqtt"]["password"] = current_config.mqtt.password;
+
+        String json;
+        serializeJson(doc, json);
+        save(json);
+    }
+
     void clear()
     {
         for (int i = 0; i < EEPROM_SIZE; ++i)

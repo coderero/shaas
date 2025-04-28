@@ -46,6 +46,7 @@ int PIR::get_port()
  */
 bool PIR::get_movement()
 {
+    detect_movement();
     return movement;
 }
 

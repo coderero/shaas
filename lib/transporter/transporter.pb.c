@@ -30,13 +30,21 @@ PB_BIND(transporter_LDR, transporter_LDR, AUTO)
 PB_BIND(transporter_Motion, transporter_Motion, AUTO)
 
 
-PB_BIND(transporter_Relay, transporter_Relay, AUTO)
-
-
 PB_BIND(transporter_FullConfig, transporter_FullConfig, AUTO)
 
 
 PB_BIND(transporter_ConfigTopic, transporter_ConfigTopic, AUTO)
+
+
+PB_BIND(transporter_RelayState, transporter_RelayState, AUTO)
+
+
+PB_BIND(transporter_ClimateData, transporter_ClimateData, AUTO)
+
+
+PB_BIND(transporter_LDRData, transporter_LDRData, AUTO)
+
+
 
 
 

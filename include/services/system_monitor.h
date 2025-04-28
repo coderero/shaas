@@ -5,9 +5,14 @@
 #include <communication/config_manager.h>
 #include <communication/wifi_manager.h>
 #include <communication/mqtt_manager.h>
+#include <communication/serial_module.h>
 #include <services/whitelist_manager.h>
+#include <services/sensor_manager.h>
 #include <services/config_engine.h>
 #include <services/security.h>
+#include <devices/relay_control.h>
+
+#include <modules/mux.h>
 
 #include <utils/protobuf.h>
 
@@ -31,10 +36,14 @@ private:
     MQTTManager *mqtt = nullptr;
     Security *security = nullptr;
 
-    WhiteListManager whitelistManager;
+    Mux mux;
     Config config;
-    ConfigManager configManager;
     ConfigEngine configEngine;
+    SerialModule serialModule;
+    RelayControl relayControl;
+    ConfigManager configManager;
+    SensorManager sensorManager;
+    WhiteListManager whitelistManager;
 
     SystemState state = SystemState::WAIT_CONFIG;
 
@@ -118,6 +127,41 @@ public:
                                           configureBasicConfig(); });
             bt->begin();
         }
+
+        if (serialModule.init(Serial1))
+        {
+            Serial.println("SystemMonitor: SerialModule initialized successfully");
+
+            if (relayControl.init(&serialModule))
+            {
+                Serial.println("SystemMonitor: RelayControl initialized successfully");
+            }
+            else
+            {
+                Serial.println("SystemMonitor: Failed to initialize RelayControl");
+            }
+        }
+        else
+        {
+            Serial.println("SystemMonitor: Failed to initialize SerialModule");
+        }
+
+        int muxSelectionPins[] = {10, 5, 8, 9};               // S0, S1, S2, S3 pins
+        mux.init(3, muxSelectionPins, 4, DIGITAL, MUX_INPUT); // Signal pin on A0
+
+        // After MQTT and ConfigEngine are initialized:
+        if (state == SystemState::CONNECT_WIFI || state == SystemState::CONNECT_MQTT)
+        {
+            // Initialize SensorManager with mux
+            if (sensorManager.init(&configEngine, mqtt, &mux, config.device_uid))
+            {
+                Serial.println("SystemMonitor: SensorManager initialized successfully");
+            }
+            else
+            {
+                Serial.println("SystemMonitor: Failed to initialize SensorManager");
+            }
+        }
     }
 
     void update()
@@ -171,8 +215,10 @@ public:
 
                 String rfid_topic = "arduino/" + config.device_uid + "/rfid";
                 String config_topic = "arduino/" + config.device_uid + "/config";
+                String relay_state = "arduino/" + config.device_uid + "/relay";
                 mqtt->subscribe(rfid_topic.c_str());
                 mqtt->subscribe(config_topic.c_str());
+                mqtt->subscribe(relay_state.c_str());
                 state = SystemState::READY;
             }
             break;
@@ -194,6 +240,8 @@ public:
             mqtt->update();
             whitelistManager.update();
             security->handle();
+            relayControl.handleResponses();
+            sensorManager.update();
             break;
         }
     }
@@ -202,6 +250,7 @@ public:
     {
         String rfid_topic = "arduino/" + config.device_uid + "/rfid";
         String config_module = "arduino/" + config.device_uid + "/config";
+        String relay_state = "arduino/" + config.device_uid + "/relay";
         if (strcmp(topic, rfid_topic.c_str()) == 0)
         {
             handle_security(topic, payload, length);
@@ -209,148 +258,58 @@ public:
 
         if (strcmp(topic, config_module.c_str()) == 0)
         {
+            handle_config_manager(topic, payload, length);
+        }
+
+        if (strcmp(topic, relay_state.c_str()) == 0)
+        {
             pb_istream_t stream = pb_istream_from_buffer(payload, length);
 
-            transporter_ConfigTopic config = transporter_ConfigTopic_init_zero;
-            if (pb_decode(&stream, transporter_ConfigTopic_fields, &config))
+            transporter_RelayState relayState = transporter_RelayState_init_zero;
+            if (pb_decode(&stream, transporter_RelayState_fields, &relayState))
             {
-                config_data _config;
-                ldr l, ldrs[MAX_LDR];
-                relay r, relays[MAX_RELAY];
-                motion m, motions[MAX_MOTION];
-                climate c, climates[MAX_CLIMATE];
-
-                switch (config.which_payload)
-                {
-                case transporter_ConfigTopic_climate_tag:
-                    c.id = config.payload.climate.id;
-                    c.dht22_port = config.payload.climate.dht22_port;
-                    c.aqi_port = config.payload.climate.aqi_port;
-                    c.has_buzzer = config.payload.climate.has_buzzers;
-                    c.buzzer_port = config.payload.climate.buzzer_port;
-
-                    Serial.println("SystemMonitor: Climate config received");
-                    Serial.print("SystemMonitor: Climate ID: ");
-                    Serial.println(c.id);
-                    Serial.print("SystemMonitor: DHT22 Port: ");
-                    Serial.println(c.dht22_port);
-                    Serial.print("SystemMonitor: AQI Port: ");
-                    Serial.println(c.aqi_port);
-                    Serial.print("SystemMonitor: Has Buzzer: ");
-                    Serial.println(c.has_buzzer);
-                    Serial.print("SystemMonitor: Buzzer Port: ");
-                    Serial.println(c.buzzer_port);
-
-                    break;
-
-                case transporter_ConfigTopic_ldr_tag:
-                    l.id = config.payload.ldr.id;
-                    l.port = config.payload.ldr.port;
-
-                    Serial.println("SystemMonitor: LDR config received");
-                    Serial.print("SystemMonitor: LDR ID: ");
-                    Serial.println(l.id);
-                    Serial.print("SystemMonitor: LDR Port: ");
-                    Serial.println(l.port);
-                    break;
-
-                case transporter_ConfigTopic_motion_tag:
-                    m.id = config.payload.motion.id;
-                    m.port = config.payload.motion.port;
-                    m.relay_channel = config.payload.motion.relay_channel;
-                    m.relay_id = config.payload.motion.relay_id;
-
-                    Serial.println("SystemMonitor: Motion config received");
-                    Serial.print("SystemMonitor: Motion ID: ");
-                    Serial.println(m.id);
-                    Serial.print("SystemMonitor: Motion Port: ");
-                    Serial.println(m.port);
-                    Serial.print("SystemMonitor: Relay Channel: ");
-                    Serial.println(m.relay_channel);
-                    Serial.print("SystemMonitor: Relay ID: ");
-                    Serial.println(m.relay_id);
-                    break;
-                case transporter_ConfigTopic_relay_tag:
-                    r.id = config.payload.relay.id;
-                    r.type = config.payload.relay.type;
-
-                    Serial.println("SystemMonitor: Relay config received");
-                    Serial.print("SystemMonitor: Relay ID: ");
-                    Serial.println(r.id);
-                    Serial.print("SystemMonitor: Relay Type: ");
-                    Serial.println(r.type);
-                    break;
-
-                case transporter_ConfigTopic_full_config_tag:
-
-                    for (int i = 0; i < config.payload.full_config.climates_count; i++)
-                    {
-                        _config.climates[i].id = config.payload.full_config.climates[i].id;
-                        _config.climates[i].dht22_port = config.payload.full_config.climates[i].dht22_port;
-                        _config.climates[i].aqi_port = config.payload.full_config.climates[i].aqi_port;
-                        _config.climates[i].has_buzzer = config.payload.full_config.climates[i].has_buzzers;
-                        _config.climates[i].buzzer_port = config.payload.full_config.climates[i].buzzer_port;
-                    }
-
-                    for (int i = 0; i < config.payload.full_config.ldrs_count; i++)
-                    {
-                        _config.ldrs[i].id = config.payload.full_config.ldrs[i].id;
-                        _config.ldrs[i].port = config.payload.full_config.ldrs[i].port;
-                    }
-
-                    for (int i = 0; i < config.payload.full_config.motions_count; i++)
-                    {
-                        _config.motions[i].id = config.payload.full_config.motions[i].id;
-                        _config.motions[i].port = config.payload.full_config.motions[i].port;
-                        _config.motions[i].relay_channel = config.payload.full_config.motions[i].relay_channel;
-                        _config.motions[i].relay_id = config.payload.full_config.motions[i].relay_id;
-                    }
-
-                    for (int i = 0; i < config.payload.full_config.relays_count; i++)
-                    {
-                        _config.relays[i].id = config.payload.full_config.relays[i].id;
-                        _config.relays[i].type = config.payload.full_config.relays[i].type;
-                    }
-
-                    _config.version = 1;
-                    _config.size = sizeof(_config);
-                    _config.climate_size = config.payload.full_config.climates_count;
-                    _config.ldr_size = config.payload.full_config.ldrs_count;
-                    _config.motion_size = config.payload.full_config.motions_count;
-                    _config.relay_size = config.payload.full_config.relays_count;
-
-                    Serial.println("SystemMonitor: Full config received");
-                    Serial.print("SystemMonitor: Climate Size: ");
-                    Serial.println(_config.climate_size);
-                    Serial.print("SystemMonitor: LDR Size: ");
-                    Serial.println(_config.ldr_size);
-                    Serial.print("SystemMonitor: Motion Size: ");
-                    Serial.println(_config.motion_size);
-                    Serial.print("SystemMonitor: Relay Size: ");
-                    Serial.println(_config.relay_size);
-                    break;
-                default:
-                    break;
-                }
+                relayControl.toggleRelay(relayState.type, relayState.port, relayState.state);
+            }
+            else
+            {
+                Serial.print("SystemMonitor: Failed to decode RelayState: ");
+                Serial.println(PB_GET_ERROR(&stream));
             }
         }
     }
 
     void handle_security(const char *topic, uint8_t *payload, unsigned int length)
     {
-        char registration_request_id[128] = {0};
+        CallbackSharedData shared_data = {0};
         pb_istream_t stream = pb_istream_from_buffer(payload, length);
 
         transporter_RfidEnvelope rfidEnvelope = transporter_RfidEnvelope_init_zero;
         rfidEnvelope.cb_payload.funcs.decode = msg_callback;
-        rfidEnvelope.cb_payload.arg = registration_request_id;
+        rfidEnvelope.cb_payload.arg = &shared_data;
 
         if (pb_decode(&stream, transporter_RfidEnvelope_fields, &rfidEnvelope))
         {
-            if (rfidEnvelope.which_payload == transporter_RfidEnvelope_register_request_tag)
+            switch (rfidEnvelope.which_payload)
             {
-                whitelistManager.set_registration_request_id(registration_request_id);
+            case transporter_RfidEnvelope_register_request_tag:
+                whitelistManager.set_registration_request_id(shared_data.registration_id);
                 whitelistManager.set_mode_registration();
+                break;
+            case transporter_RfidEnvelope_revoke_request_tag:
+                Serial.print("SystemMonitor: RevokeRequest received: ");
+                for (size_t i = 0; i < shared_data.uid_length; i++)
+                {
+                    Serial.print(shared_data.uid_buffer[i], HEX);
+                    Serial.print(" ");
+                }
+                Serial.println();
+                uint8_t uid_copy[MAX_UID_LENGTH];
+                memcpy(uid_copy, shared_data.uid_buffer, shared_data.uid_length);
+
+                whitelistManager.delete_uid(uid_copy, shared_data.uid_length);
+                break;
+            default:
+                break;
             }
         }
         else
@@ -362,11 +321,81 @@ public:
 
     void handle_config_manager(const char *topic, uint8_t *payload, unsigned int length)
     {
-        // Handle the configuration manager callback
-        String config_topic = "arduino/" + config.device_uid + "/config";
-        if (strcmp(topic, config_topic.c_str()) == 0)
+        pb_istream_t stream = pb_istream_from_buffer(payload, length);
+
+        transporter_ConfigTopic config = transporter_ConfigTopic_init_zero;
+        if (pb_decode(&stream, transporter_ConfigTopic_fields, &config))
         {
-            Serial.println("SystemMonitor: Config manager callback invoked");
+            config_data _config;
+            ldr l, ldrs[MAX_LDR];
+            motion m, motions[MAX_MOTION];
+            climate c, climates[MAX_CLIMATE];
+
+            switch (config.which_payload)
+            {
+            case transporter_ConfigTopic_climate_tag:
+                c.id = config.payload.climate.id;
+                c.dht22_port = config.payload.climate.dht22_port;
+                c.aqi_port = config.payload.climate.aqi_port;
+                c.has_buzzer = config.payload.climate.has_buzzers;
+                c.buzzer_port = config.payload.climate.buzzer_port;
+
+                configEngine.set_climate_config(c);
+                break;
+
+            case transporter_ConfigTopic_ldr_tag:
+                l.id = config.payload.ldr.id;
+                l.port = config.payload.ldr.port;
+                configEngine.set_ldr_config(l);
+                break;
+
+            case transporter_ConfigTopic_motion_tag:
+                m.id = config.payload.motion.id;
+                m.port = config.payload.motion.port;
+                m.relay_type = config.payload.motion.relay_type;
+                m.relay_port = config.payload.motion.relay_port;
+
+                configEngine.set_motion_config(m);
+                break;
+
+            case transporter_ConfigTopic_full_config_tag:
+
+                for (int i = 0; i < config.payload.full_config.climates_count; i++)
+                {
+                    _config.climates[i].id = config.payload.full_config.climates[i].id;
+                    _config.climates[i].dht22_port = config.payload.full_config.climates[i].dht22_port;
+                    _config.climates[i].aqi_port = config.payload.full_config.climates[i].aqi_port;
+                    _config.climates[i].has_buzzer = config.payload.full_config.climates[i].has_buzzers;
+                    _config.climates[i].buzzer_port = config.payload.full_config.climates[i].buzzer_port;
+                }
+
+                for (int i = 0; i < config.payload.full_config.ldrs_count; i++)
+                {
+                    _config.ldrs[i].id = config.payload.full_config.ldrs[i].id;
+                    _config.ldrs[i].port = config.payload.full_config.ldrs[i].port;
+                }
+
+                for (int i = 0; i < config.payload.full_config.motions_count; i++)
+                {
+                    _config.motions[i].id = config.payload.full_config.motions[i].id;
+                    _config.motions[i].port = config.payload.full_config.motions[i].port;
+                    _config.motions[i].relay_type = config.payload.full_config.motions[i].relay_type;
+                    _config.motions[i].relay_port = config.payload.full_config.motions[i].relay_port;
+                }
+
+                _config.version = 1;
+                _config.size = sizeof(_config);
+                _config.climate_size = config.payload.full_config.climates_count;
+                _config.ldr_size = config.payload.full_config.ldrs_count;
+                _config.motion_size = config.payload.full_config.motions_count;
+
+                configEngine.set_full_config(_config);
+                break;
+            default:
+                break;
+            }
+
+            configEngine.save_config();
         }
     }
 

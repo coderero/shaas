@@ -147,21 +147,6 @@ bool ConfigEngine::set_motion_config(motion m)
 }
 
 /**
- * @brief Adds a new relay configuration.
- *
- * @param r Relay configuration to add.
- * @return true if added and saved successfully, false if storage is full.
- */
-bool ConfigEngine::set_relay_config(relay r)
-{
-    if (_config->relay_size >= MAX_RELAY)
-        return false;
-
-    _config->relays[_config->relay_size++] = r;
-    return save_config();
-}
-
-/**
  * @brief Retrieves a specific climate configuration by ID.
  *
  * @param id ID of the climate config.
@@ -205,22 +190,6 @@ motion ConfigEngine::get_motion_config(uint8_t id)
     {
         if (_config->motions[i].id == id)
             return _config->motions[i];
-    }
-    return {0};
-}
-
-/**
- * @brief Retrieves a specific relay configuration by ID.
- *
- * @param id ID of the relay config.
- * @return The matched relay config or default-initialized if not found.
- */
-relay ConfigEngine::get_relay_config(uint8_t id)
-{
-    for (int i = 0; i < _config->relay_size; ++i)
-    {
-        if (_config->relays[i].id == id)
-            return _config->relays[i];
     }
     return {0};
 }

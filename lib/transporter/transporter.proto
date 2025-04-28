@@ -4,6 +4,17 @@ package transporter;
 
 import "nanopb.proto";
 
+enum RelayType{
+  UNKNOWN = 0;
+  LOW_DUTY = 1;
+  HEAVY_DUTY = 2;
+}
+
+enum RelayStateType{
+  OFF = 0;
+  ON = 1;
+}
+
 message UID {
   bytes value = 1;
 }
@@ -30,11 +41,6 @@ message RfidEnvelope {
   }
 }
 
-enum RelayType {
-  RELAY_HEAVY = 0;
-  RELAY_LIGHT = 1;
-}
-
 message Climate {
   uint32 id = 1;
   uint32 dht22_port = 2;
@@ -51,13 +57,8 @@ message LDR {
 message Motion {
   uint32 id = 1;
   uint32 port = 2;
-  uint32 relay_id = 3;
-  uint32 relay_channel = 4;
-}
-
-message Relay {
-  uint32 id = 1;
-  RelayType type = 2;
+  uint32 relay_port = 3;
+  RelayType relay_type = 4;
 }
 
 message FullConfig {
@@ -70,9 +71,6 @@ message FullConfig {
   repeated Motion motions = 3 [
     (nanopb).max_count = 4
   ];
-  repeated Relay relays = 4 [
-    (nanopb).max_count = 2
-  ];
 }
 
 message ConfigTopic {
@@ -80,9 +78,24 @@ message ConfigTopic {
     Climate climate = 2;
     LDR ldr = 3;
     Motion motion = 4;
-    Relay relay = 5;
     FullConfig full_config = 6;
   }
 }
 
+message RelayState {
+  RelayType type = 1;
+  uint32 port = 2;
+  RelayStateType state = 3;
+}
 
+message ClimateData {
+  uint32 id = 1;
+  float temperature = 2;
+  float humidity = 3;
+  uint32 aqi = 4;
+}
+
+message LDRData {
+  uint32 id = 1;
+  uint32 value = 2;
+}

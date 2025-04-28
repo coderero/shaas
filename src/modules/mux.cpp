@@ -29,10 +29,19 @@ Mux::Mux()
 void Mux::init(int signal_pin, int *selection_pins, int selection_pins_size, mux_mode mode, signal_mode signal)
 {
     this->signal_pin = signal_pin;
-    this->selection_pins = selection_pins;
     this->selection_pins_size = selection_pins_size;
     this->mode = mode;
     this->signal = signal;
+
+    // Properly allocate and copy selection pins
+    this->selection_pins = (int *)malloc(selection_pins_size * sizeof(int));
+    if (this->selection_pins)
+    {
+        for (int i = 0; i < selection_pins_size; i++)
+        {
+            this->selection_pins[i] = selection_pins[i];
+        }
+    }
 
     this->mux_size = pow(2, selection_pins_size);
 
@@ -49,10 +58,12 @@ void Mux::init(int signal_pin, int *selection_pins, int selection_pins_size, mux
     // Set selection pins to output
     for (int i = 0; i < selection_pins_size; i++)
     {
-        pinMode(selection_pins[i], OUTPUT);
+        pinMode(this->selection_pins[i], OUTPUT);
+        digitalWrite(this->selection_pins[i], LOW); // Initialize to LOW
     }
 
     initialized = true;
+    selected_channel = 0; // Initialize to channel 0
 }
 
 /**

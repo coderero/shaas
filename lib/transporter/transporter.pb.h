@@ -11,9 +11,15 @@
 
 /* Enum definitions */
 typedef enum _transporter_RelayType {
-    transporter_RelayType_RELAY_HEAVY = 0,
-    transporter_RelayType_RELAY_LIGHT = 1
+    transporter_RelayType_UNKNOWN = 0,
+    transporter_RelayType_LOW_DUTY = 1,
+    transporter_RelayType_HEAVY_DUTY = 2
 } transporter_RelayType;
+
+typedef enum _transporter_RelayStateType {
+    transporter_RelayStateType_OFF = 0,
+    transporter_RelayStateType_ON = 1
+} transporter_RelayStateType;
 
 /* Struct definitions */
 typedef struct _transporter_UID {
@@ -61,14 +67,9 @@ typedef struct _transporter_LDR {
 typedef struct _transporter_Motion {
     uint32_t id;
     uint32_t port;
-    uint32_t relay_id;
-    uint32_t relay_channel;
+    uint32_t relay_port;
+    transporter_RelayType relay_type;
 } transporter_Motion;
-
-typedef struct _transporter_Relay {
-    uint32_t id;
-    transporter_RelayType type;
-} transporter_Relay;
 
 typedef struct _transporter_FullConfig {
     pb_size_t climates_count;
@@ -77,8 +78,6 @@ typedef struct _transporter_FullConfig {
     transporter_LDR ldrs[2];
     pb_size_t motions_count;
     transporter_Motion motions[4];
-    pb_size_t relays_count;
-    transporter_Relay relays[2];
 } transporter_FullConfig;
 
 typedef struct _transporter_ConfigTopic {
@@ -87,10 +86,27 @@ typedef struct _transporter_ConfigTopic {
         transporter_Climate climate;
         transporter_LDR ldr;
         transporter_Motion motion;
-        transporter_Relay relay;
         transporter_FullConfig full_config;
     } payload;
 } transporter_ConfigTopic;
+
+typedef struct _transporter_RelayState {
+    transporter_RelayType type;
+    uint32_t port;
+    transporter_RelayStateType state;
+} transporter_RelayState;
+
+typedef struct _transporter_ClimateData {
+    uint32_t id;
+    float temperature;
+    float humidity;
+    uint32_t aqi;
+} transporter_ClimateData;
+
+typedef struct _transporter_LDRData {
+    uint32_t id;
+    uint32_t value;
+} transporter_LDRData;
 
 
 #ifdef __cplusplus
@@ -98,9 +114,13 @@ extern "C" {
 #endif
 
 /* Helper constants for enums */
-#define _transporter_RelayType_MIN transporter_RelayType_RELAY_HEAVY
-#define _transporter_RelayType_MAX transporter_RelayType_RELAY_LIGHT
-#define _transporter_RelayType_ARRAYSIZE ((transporter_RelayType)(transporter_RelayType_RELAY_LIGHT+1))
+#define _transporter_RelayType_MIN transporter_RelayType_UNKNOWN
+#define _transporter_RelayType_MAX transporter_RelayType_HEAVY_DUTY
+#define _transporter_RelayType_ARRAYSIZE ((transporter_RelayType)(transporter_RelayType_HEAVY_DUTY+1))
+
+#define _transporter_RelayStateType_MIN transporter_RelayStateType_OFF
+#define _transporter_RelayStateType_MAX transporter_RelayStateType_ON
+#define _transporter_RelayStateType_ARRAYSIZE ((transporter_RelayStateType)(transporter_RelayStateType_ON+1))
 
 
 
@@ -109,8 +129,12 @@ extern "C" {
 
 
 
+#define transporter_Motion_relay_type_ENUMTYPE transporter_RelayType
 
-#define transporter_Relay_type_ENUMTYPE transporter_RelayType
+
+
+#define transporter_RelayState_type_ENUMTYPE transporter_RelayType
+#define transporter_RelayState_state_ENUMTYPE transporter_RelayStateType
 
 
 
@@ -123,10 +147,12 @@ extern "C" {
 #define transporter_RfidEnvelope_init_default    {{{NULL}, NULL}, 0, {transporter_RegisterRequest_init_default}}
 #define transporter_Climate_init_default         {0, 0, 0, 0, 0}
 #define transporter_LDR_init_default             {0, 0}
-#define transporter_Motion_init_default          {0, 0, 0, 0}
-#define transporter_Relay_init_default           {0, _transporter_RelayType_MIN}
-#define transporter_FullConfig_init_default      {0, {transporter_Climate_init_default, transporter_Climate_init_default}, 0, {transporter_LDR_init_default, transporter_LDR_init_default}, 0, {transporter_Motion_init_default, transporter_Motion_init_default, transporter_Motion_init_default, transporter_Motion_init_default}, 0, {transporter_Relay_init_default, transporter_Relay_init_default}}
+#define transporter_Motion_init_default          {0, 0, 0, _transporter_RelayType_MIN}
+#define transporter_FullConfig_init_default      {0, {transporter_Climate_init_default, transporter_Climate_init_default}, 0, {transporter_LDR_init_default, transporter_LDR_init_default}, 0, {transporter_Motion_init_default, transporter_Motion_init_default, transporter_Motion_init_default, transporter_Motion_init_default}}
 #define transporter_ConfigTopic_init_default     {0, {transporter_Climate_init_default}}
+#define transporter_RelayState_init_default      {_transporter_RelayType_MIN, 0, _transporter_RelayStateType_MIN}
+#define transporter_ClimateData_init_default     {0, 0, 0, 0}
+#define transporter_LDRData_init_default         {0, 0}
 #define transporter_UID_init_zero                {{{NULL}, NULL}}
 #define transporter_RegisterRequest_init_zero    {{{NULL}, NULL}}
 #define transporter_RegisterResponse_init_zero   {{{NULL}, NULL}, false, transporter_UID_init_zero}
@@ -134,10 +160,12 @@ extern "C" {
 #define transporter_RfidEnvelope_init_zero       {{{NULL}, NULL}, 0, {transporter_RegisterRequest_init_zero}}
 #define transporter_Climate_init_zero            {0, 0, 0, 0, 0}
 #define transporter_LDR_init_zero                {0, 0}
-#define transporter_Motion_init_zero             {0, 0, 0, 0}
-#define transporter_Relay_init_zero              {0, _transporter_RelayType_MIN}
-#define transporter_FullConfig_init_zero         {0, {transporter_Climate_init_zero, transporter_Climate_init_zero}, 0, {transporter_LDR_init_zero, transporter_LDR_init_zero}, 0, {transporter_Motion_init_zero, transporter_Motion_init_zero, transporter_Motion_init_zero, transporter_Motion_init_zero}, 0, {transporter_Relay_init_zero, transporter_Relay_init_zero}}
+#define transporter_Motion_init_zero             {0, 0, 0, _transporter_RelayType_MIN}
+#define transporter_FullConfig_init_zero         {0, {transporter_Climate_init_zero, transporter_Climate_init_zero}, 0, {transporter_LDR_init_zero, transporter_LDR_init_zero}, 0, {transporter_Motion_init_zero, transporter_Motion_init_zero, transporter_Motion_init_zero, transporter_Motion_init_zero}}
 #define transporter_ConfigTopic_init_zero        {0, {transporter_Climate_init_zero}}
+#define transporter_RelayState_init_zero         {_transporter_RelayType_MIN, 0, _transporter_RelayStateType_MIN}
+#define transporter_ClimateData_init_zero        {0, 0, 0, 0}
+#define transporter_LDRData_init_zero            {0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define transporter_UID_value_tag                1
@@ -157,19 +185,24 @@ extern "C" {
 #define transporter_LDR_port_tag                 2
 #define transporter_Motion_id_tag                1
 #define transporter_Motion_port_tag              2
-#define transporter_Motion_relay_id_tag          3
-#define transporter_Motion_relay_channel_tag     4
-#define transporter_Relay_id_tag                 1
-#define transporter_Relay_type_tag               2
+#define transporter_Motion_relay_port_tag        3
+#define transporter_Motion_relay_type_tag        4
 #define transporter_FullConfig_climates_tag      1
 #define transporter_FullConfig_ldrs_tag          2
 #define transporter_FullConfig_motions_tag       3
-#define transporter_FullConfig_relays_tag        4
 #define transporter_ConfigTopic_climate_tag      2
 #define transporter_ConfigTopic_ldr_tag          3
 #define transporter_ConfigTopic_motion_tag       4
-#define transporter_ConfigTopic_relay_tag        5
 #define transporter_ConfigTopic_full_config_tag  6
+#define transporter_RelayState_type_tag          1
+#define transporter_RelayState_port_tag          2
+#define transporter_RelayState_state_tag         3
+#define transporter_ClimateData_id_tag           1
+#define transporter_ClimateData_temperature_tag  2
+#define transporter_ClimateData_humidity_tag     3
+#define transporter_ClimateData_aqi_tag          4
+#define transporter_LDRData_id_tag               1
+#define transporter_LDRData_value_tag            2
 
 /* Struct field encoding specification for nanopb */
 #define transporter_UID_FIELDLIST(X, a) \
@@ -223,42 +256,53 @@ X(a, STATIC,   SINGULAR, UINT32,   port,              2)
 #define transporter_Motion_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
 X(a, STATIC,   SINGULAR, UINT32,   port,              2) \
-X(a, STATIC,   SINGULAR, UINT32,   relay_id,          3) \
-X(a, STATIC,   SINGULAR, UINT32,   relay_channel,     4)
+X(a, STATIC,   SINGULAR, UINT32,   relay_port,        3) \
+X(a, STATIC,   SINGULAR, UENUM,    relay_type,        4)
 #define transporter_Motion_CALLBACK NULL
 #define transporter_Motion_DEFAULT NULL
-
-#define transporter_Relay_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
-X(a, STATIC,   SINGULAR, UENUM,    type,              2)
-#define transporter_Relay_CALLBACK NULL
-#define transporter_Relay_DEFAULT NULL
 
 #define transporter_FullConfig_FIELDLIST(X, a) \
 X(a, STATIC,   REPEATED, MESSAGE,  climates,          1) \
 X(a, STATIC,   REPEATED, MESSAGE,  ldrs,              2) \
-X(a, STATIC,   REPEATED, MESSAGE,  motions,           3) \
-X(a, STATIC,   REPEATED, MESSAGE,  relays,            4)
+X(a, STATIC,   REPEATED, MESSAGE,  motions,           3)
 #define transporter_FullConfig_CALLBACK NULL
 #define transporter_FullConfig_DEFAULT NULL
 #define transporter_FullConfig_climates_MSGTYPE transporter_Climate
 #define transporter_FullConfig_ldrs_MSGTYPE transporter_LDR
 #define transporter_FullConfig_motions_MSGTYPE transporter_Motion
-#define transporter_FullConfig_relays_MSGTYPE transporter_Relay
 
 #define transporter_ConfigTopic_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,climate,payload.climate),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,ldr,payload.ldr),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,motion,payload.motion),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,relay,payload.relay),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,full_config,payload.full_config),   6)
 #define transporter_ConfigTopic_CALLBACK NULL
 #define transporter_ConfigTopic_DEFAULT NULL
 #define transporter_ConfigTopic_payload_climate_MSGTYPE transporter_Climate
 #define transporter_ConfigTopic_payload_ldr_MSGTYPE transporter_LDR
 #define transporter_ConfigTopic_payload_motion_MSGTYPE transporter_Motion
-#define transporter_ConfigTopic_payload_relay_MSGTYPE transporter_Relay
 #define transporter_ConfigTopic_payload_full_config_MSGTYPE transporter_FullConfig
+
+#define transporter_RelayState_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    type,              1) \
+X(a, STATIC,   SINGULAR, UINT32,   port,              2) \
+X(a, STATIC,   SINGULAR, UENUM,    state,             3)
+#define transporter_RelayState_CALLBACK NULL
+#define transporter_RelayState_DEFAULT NULL
+
+#define transporter_ClimateData_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
+X(a, STATIC,   SINGULAR, FLOAT,    temperature,       2) \
+X(a, STATIC,   SINGULAR, FLOAT,    humidity,          3) \
+X(a, STATIC,   SINGULAR, UINT32,   aqi,               4)
+#define transporter_ClimateData_CALLBACK NULL
+#define transporter_ClimateData_DEFAULT NULL
+
+#define transporter_LDRData_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
+X(a, STATIC,   SINGULAR, UINT32,   value,             2)
+#define transporter_LDRData_CALLBACK NULL
+#define transporter_LDRData_DEFAULT NULL
 
 extern const pb_msgdesc_t transporter_UID_msg;
 extern const pb_msgdesc_t transporter_RegisterRequest_msg;
@@ -268,9 +312,11 @@ extern const pb_msgdesc_t transporter_RfidEnvelope_msg;
 extern const pb_msgdesc_t transporter_Climate_msg;
 extern const pb_msgdesc_t transporter_LDR_msg;
 extern const pb_msgdesc_t transporter_Motion_msg;
-extern const pb_msgdesc_t transporter_Relay_msg;
 extern const pb_msgdesc_t transporter_FullConfig_msg;
 extern const pb_msgdesc_t transporter_ConfigTopic_msg;
+extern const pb_msgdesc_t transporter_RelayState_msg;
+extern const pb_msgdesc_t transporter_ClimateData_msg;
+extern const pb_msgdesc_t transporter_LDRData_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define transporter_UID_fields &transporter_UID_msg
@@ -281,9 +327,11 @@ extern const pb_msgdesc_t transporter_ConfigTopic_msg;
 #define transporter_Climate_fields &transporter_Climate_msg
 #define transporter_LDR_fields &transporter_LDR_msg
 #define transporter_Motion_fields &transporter_Motion_msg
-#define transporter_Relay_fields &transporter_Relay_msg
 #define transporter_FullConfig_fields &transporter_FullConfig_msg
 #define transporter_ConfigTopic_fields &transporter_ConfigTopic_msg
+#define transporter_RelayState_fields &transporter_RelayState_msg
+#define transporter_ClimateData_fields &transporter_ClimateData_msg
+#define transporter_LDRData_fields &transporter_LDRData_msg
 
 /* Maximum encoded size of messages (where known) */
 /* transporter_UID_size depends on runtime parameters */
@@ -292,12 +340,14 @@ extern const pb_msgdesc_t transporter_ConfigTopic_msg;
 /* transporter_RevokeRequest_size depends on runtime parameters */
 /* transporter_RfidEnvelope_size depends on runtime parameters */
 #define TRANSPORTER_TRANSPORTER_PB_H_MAX_SIZE    transporter_ConfigTopic_size
+#define transporter_ClimateData_size             22
 #define transporter_Climate_size                 26
-#define transporter_ConfigTopic_size             211
-#define transporter_FullConfig_size              208
+#define transporter_ConfigTopic_size             175
+#define transporter_FullConfig_size              172
+#define transporter_LDRData_size                 12
 #define transporter_LDR_size                     12
-#define transporter_Motion_size                  24
-#define transporter_Relay_size                   8
+#define transporter_Motion_size                  20
+#define transporter_RelayState_size              10
 
 #ifdef __cplusplus
 } /* extern "C" */
