@@ -7,7 +7,6 @@
 /**
  * @class SerialModule
  * @brief Manages serial communication using the SerialTransfer library.
- *
  * This class encapsulates SerialTransfer functionality to facilitate structured
  * data transfer between devices over serial connections.
  */
