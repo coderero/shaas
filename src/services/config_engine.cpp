@@ -195,6 +195,78 @@ motion ConfigEngine::get_motion_config(uint8_t id)
 }
 
 /**
+ * @brief Deletes a climate configuration by ID.
+ *
+ * @param id ID of the climate config to delete.
+ */
+void ConfigEngine::delete_climate_config(uint8_t id)
+{
+    for (int i = 0; i < _config->climate_size; ++i)
+    {
+        if (_config->climates[i].id == id)
+        {
+            // Shift remaining elements to the left
+            for (int j = i; j < _config->climate_size - 1; ++j)
+            {
+                _config->climates[j] = _config->climates[j + 1];
+            }
+            _config->climate_size--;
+            break;
+        }
+    }
+
+    save_config();
+}
+
+/**
+ * @brief Deletes an LDR configuration by ID.
+ *
+ * @param id ID of the LDR config to delete.
+ */
+void ConfigEngine::delete_ldr_config(uint8_t id)
+{
+    for (int i = 0; i < _config->ldr_size; ++i)
+    {
+        if (_config->ldrs[i].id == id)
+        {
+            // Shift remaining elements to the left
+            for (int j = i; j < _config->ldr_size - 1; ++j)
+            {
+                _config->ldrs[j] = _config->ldrs[j + 1];
+            }
+            _config->ldr_size--;
+            break;
+        }
+    }
+
+    save_config();
+}
+
+/**
+ * @brief Deletes a motion configuration by ID.
+ *
+ * @param id ID of the motion config to delete.
+ */
+void ConfigEngine::delete_motion_config(uint8_t id)
+{
+    for (int i = 0; i < _config->motion_size; ++i)
+    {
+        if (_config->motions[i].id == id)
+        {
+            // Shift remaining elements to the left
+            for (int j = i; j < _config->motion_size - 1; ++j)
+            {
+                _config->motions[j] = _config->motions[j + 1];
+            }
+            _config->motion_size--;
+            break;
+        }
+    }
+
+    save_config();
+}
+
+/**
  * @brief Returns a pointer to the full configuration structure.
  *
  * @return Pointer to config_data object containing all settings.

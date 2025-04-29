@@ -6,6 +6,9 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+PB_BIND(transporter_WifiCredentials, transporter_WifiCredentials, AUTO)
+
+
 PB_BIND(transporter_UID, transporter_UID, AUTO)
 
 
@@ -36,7 +39,22 @@ PB_BIND(transporter_FullConfig, transporter_FullConfig, AUTO)
 PB_BIND(transporter_ConfigTopic, transporter_ConfigTopic, AUTO)
 
 
+PB_BIND(transporter_ClimateRemoval, transporter_ClimateRemoval, AUTO)
+
+
+PB_BIND(transporter_LDRRemoval, transporter_LDRRemoval, AUTO)
+
+
+PB_BIND(transporter_MotionRemoval, transporter_MotionRemoval, AUTO)
+
+
+PB_BIND(transporter_ConfigRemoval, transporter_ConfigRemoval, AUTO)
+
+
 PB_BIND(transporter_RelayState, transporter_RelayState, AUTO)
+
+
+PB_BIND(transporter_RelayStateSync, transporter_RelayStateSync, AUTO)
 
 
 PB_BIND(transporter_ClimateData, transporter_ClimateData, AUTO)

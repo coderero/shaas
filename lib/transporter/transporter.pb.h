@@ -22,6 +22,11 @@ typedef enum _transporter_RelayStateType {
 } transporter_RelayStateType;
 
 /* Struct definitions */
+typedef struct _transporter_WifiCredentials {
+    pb_callback_t ssid;
+    pb_callback_t password;
+} transporter_WifiCredentials;
+
 typedef struct _transporter_UID {
     pb_callback_t value;
 } transporter_UID;
@@ -90,11 +95,36 @@ typedef struct _transporter_ConfigTopic {
     } payload;
 } transporter_ConfigTopic;
 
+typedef struct _transporter_ClimateRemoval {
+    uint32_t id;
+} transporter_ClimateRemoval;
+
+typedef struct _transporter_LDRRemoval {
+    uint32_t id;
+} transporter_LDRRemoval;
+
+typedef struct _transporter_MotionRemoval {
+    uint32_t id;
+} transporter_MotionRemoval;
+
+typedef struct _transporter_ConfigRemoval {
+    pb_size_t which_payload;
+    union {
+        transporter_ClimateRemoval climate;
+        transporter_LDRRemoval ldr;
+        transporter_MotionRemoval motion;
+    } payload;
+} transporter_ConfigRemoval;
+
 typedef struct _transporter_RelayState {
     transporter_RelayType type;
     uint32_t port;
     transporter_RelayStateType state;
 } transporter_RelayState;
+
+typedef struct _transporter_RelayStateSync {
+    char dummy_field;
+} transporter_RelayStateSync;
 
 typedef struct _transporter_ClimateData {
     uint32_t id;
@@ -129,7 +159,12 @@ extern "C" {
 
 
 
+
 #define transporter_Motion_relay_type_ENUMTYPE transporter_RelayType
+
+
+
+
 
 
 
@@ -139,7 +174,9 @@ extern "C" {
 
 
 
+
 /* Initializer values for message structs */
+#define transporter_WifiCredentials_init_default {{{NULL}, NULL}, {{NULL}, NULL}}
 #define transporter_UID_init_default             {{{NULL}, NULL}}
 #define transporter_RegisterRequest_init_default {{{NULL}, NULL}}
 #define transporter_RegisterResponse_init_default {{{NULL}, NULL}, false, transporter_UID_init_default}
@@ -150,9 +187,15 @@ extern "C" {
 #define transporter_Motion_init_default          {0, 0, 0, _transporter_RelayType_MIN}
 #define transporter_FullConfig_init_default      {0, {transporter_Climate_init_default, transporter_Climate_init_default}, 0, {transporter_LDR_init_default, transporter_LDR_init_default}, 0, {transporter_Motion_init_default, transporter_Motion_init_default, transporter_Motion_init_default, transporter_Motion_init_default}}
 #define transporter_ConfigTopic_init_default     {0, {transporter_Climate_init_default}}
+#define transporter_ClimateRemoval_init_default  {0}
+#define transporter_LDRRemoval_init_default      {0}
+#define transporter_MotionRemoval_init_default   {0}
+#define transporter_ConfigRemoval_init_default   {0, {transporter_ClimateRemoval_init_default}}
 #define transporter_RelayState_init_default      {_transporter_RelayType_MIN, 0, _transporter_RelayStateType_MIN}
+#define transporter_RelayStateSync_init_default  {0}
 #define transporter_ClimateData_init_default     {0, 0, 0, 0}
 #define transporter_LDRData_init_default         {0, 0}
+#define transporter_WifiCredentials_init_zero    {{{NULL}, NULL}, {{NULL}, NULL}}
 #define transporter_UID_init_zero                {{{NULL}, NULL}}
 #define transporter_RegisterRequest_init_zero    {{{NULL}, NULL}}
 #define transporter_RegisterResponse_init_zero   {{{NULL}, NULL}, false, transporter_UID_init_zero}
@@ -163,11 +206,18 @@ extern "C" {
 #define transporter_Motion_init_zero             {0, 0, 0, _transporter_RelayType_MIN}
 #define transporter_FullConfig_init_zero         {0, {transporter_Climate_init_zero, transporter_Climate_init_zero}, 0, {transporter_LDR_init_zero, transporter_LDR_init_zero}, 0, {transporter_Motion_init_zero, transporter_Motion_init_zero, transporter_Motion_init_zero, transporter_Motion_init_zero}}
 #define transporter_ConfigTopic_init_zero        {0, {transporter_Climate_init_zero}}
+#define transporter_ClimateRemoval_init_zero     {0}
+#define transporter_LDRRemoval_init_zero         {0}
+#define transporter_MotionRemoval_init_zero      {0}
+#define transporter_ConfigRemoval_init_zero      {0, {transporter_ClimateRemoval_init_zero}}
 #define transporter_RelayState_init_zero         {_transporter_RelayType_MIN, 0, _transporter_RelayStateType_MIN}
+#define transporter_RelayStateSync_init_zero     {0}
 #define transporter_ClimateData_init_zero        {0, 0, 0, 0}
 #define transporter_LDRData_init_zero            {0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
+#define transporter_WifiCredentials_ssid_tag     1
+#define transporter_WifiCredentials_password_tag 2
 #define transporter_UID_value_tag                1
 #define transporter_RegisterRequest_id_tag       1
 #define transporter_RegisterResponse_id_tag      1
@@ -194,6 +244,12 @@ extern "C" {
 #define transporter_ConfigTopic_ldr_tag          3
 #define transporter_ConfigTopic_motion_tag       4
 #define transporter_ConfigTopic_full_config_tag  6
+#define transporter_ClimateRemoval_id_tag        1
+#define transporter_LDRRemoval_id_tag            1
+#define transporter_MotionRemoval_id_tag         1
+#define transporter_ConfigRemoval_climate_tag    2
+#define transporter_ConfigRemoval_ldr_tag        3
+#define transporter_ConfigRemoval_motion_tag     4
 #define transporter_RelayState_type_tag          1
 #define transporter_RelayState_port_tag          2
 #define transporter_RelayState_state_tag         3
@@ -205,6 +261,12 @@ extern "C" {
 #define transporter_LDRData_value_tag            2
 
 /* Struct field encoding specification for nanopb */
+#define transporter_WifiCredentials_FIELDLIST(X, a) \
+X(a, CALLBACK, SINGULAR, STRING,   ssid,              1) \
+X(a, CALLBACK, SINGULAR, STRING,   password,          2)
+#define transporter_WifiCredentials_CALLBACK pb_default_field_callback
+#define transporter_WifiCredentials_DEFAULT NULL
+
 #define transporter_UID_FIELDLIST(X, a) \
 X(a, CALLBACK, SINGULAR, BYTES,    value,             1)
 #define transporter_UID_CALLBACK pb_default_field_callback
@@ -283,12 +345,42 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,full_config,payload.full_config),   
 #define transporter_ConfigTopic_payload_motion_MSGTYPE transporter_Motion
 #define transporter_ConfigTopic_payload_full_config_MSGTYPE transporter_FullConfig
 
+#define transporter_ClimateRemoval_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   id,                1)
+#define transporter_ClimateRemoval_CALLBACK NULL
+#define transporter_ClimateRemoval_DEFAULT NULL
+
+#define transporter_LDRRemoval_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   id,                1)
+#define transporter_LDRRemoval_CALLBACK NULL
+#define transporter_LDRRemoval_DEFAULT NULL
+
+#define transporter_MotionRemoval_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   id,                1)
+#define transporter_MotionRemoval_CALLBACK NULL
+#define transporter_MotionRemoval_DEFAULT NULL
+
+#define transporter_ConfigRemoval_FIELDLIST(X, a) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,climate,payload.climate),   2) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,ldr,payload.ldr),   3) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,motion,payload.motion),   4)
+#define transporter_ConfigRemoval_CALLBACK NULL
+#define transporter_ConfigRemoval_DEFAULT NULL
+#define transporter_ConfigRemoval_payload_climate_MSGTYPE transporter_ClimateRemoval
+#define transporter_ConfigRemoval_payload_ldr_MSGTYPE transporter_LDRRemoval
+#define transporter_ConfigRemoval_payload_motion_MSGTYPE transporter_MotionRemoval
+
 #define transporter_RelayState_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    type,              1) \
 X(a, STATIC,   SINGULAR, UINT32,   port,              2) \
 X(a, STATIC,   SINGULAR, UENUM,    state,             3)
 #define transporter_RelayState_CALLBACK NULL
 #define transporter_RelayState_DEFAULT NULL
+
+#define transporter_RelayStateSync_FIELDLIST(X, a) \
+
+#define transporter_RelayStateSync_CALLBACK NULL
+#define transporter_RelayStateSync_DEFAULT NULL
 
 #define transporter_ClimateData_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   id,                1) \
@@ -304,6 +396,7 @@ X(a, STATIC,   SINGULAR, UINT32,   value,             2)
 #define transporter_LDRData_CALLBACK NULL
 #define transporter_LDRData_DEFAULT NULL
 
+extern const pb_msgdesc_t transporter_WifiCredentials_msg;
 extern const pb_msgdesc_t transporter_UID_msg;
 extern const pb_msgdesc_t transporter_RegisterRequest_msg;
 extern const pb_msgdesc_t transporter_RegisterResponse_msg;
@@ -314,11 +407,17 @@ extern const pb_msgdesc_t transporter_LDR_msg;
 extern const pb_msgdesc_t transporter_Motion_msg;
 extern const pb_msgdesc_t transporter_FullConfig_msg;
 extern const pb_msgdesc_t transporter_ConfigTopic_msg;
+extern const pb_msgdesc_t transporter_ClimateRemoval_msg;
+extern const pb_msgdesc_t transporter_LDRRemoval_msg;
+extern const pb_msgdesc_t transporter_MotionRemoval_msg;
+extern const pb_msgdesc_t transporter_ConfigRemoval_msg;
 extern const pb_msgdesc_t transporter_RelayState_msg;
+extern const pb_msgdesc_t transporter_RelayStateSync_msg;
 extern const pb_msgdesc_t transporter_ClimateData_msg;
 extern const pb_msgdesc_t transporter_LDRData_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
+#define transporter_WifiCredentials_fields &transporter_WifiCredentials_msg
 #define transporter_UID_fields &transporter_UID_msg
 #define transporter_RegisterRequest_fields &transporter_RegisterRequest_msg
 #define transporter_RegisterResponse_fields &transporter_RegisterResponse_msg
@@ -329,11 +428,17 @@ extern const pb_msgdesc_t transporter_LDRData_msg;
 #define transporter_Motion_fields &transporter_Motion_msg
 #define transporter_FullConfig_fields &transporter_FullConfig_msg
 #define transporter_ConfigTopic_fields &transporter_ConfigTopic_msg
+#define transporter_ClimateRemoval_fields &transporter_ClimateRemoval_msg
+#define transporter_LDRRemoval_fields &transporter_LDRRemoval_msg
+#define transporter_MotionRemoval_fields &transporter_MotionRemoval_msg
+#define transporter_ConfigRemoval_fields &transporter_ConfigRemoval_msg
 #define transporter_RelayState_fields &transporter_RelayState_msg
+#define transporter_RelayStateSync_fields &transporter_RelayStateSync_msg
 #define transporter_ClimateData_fields &transporter_ClimateData_msg
 #define transporter_LDRData_fields &transporter_LDRData_msg
 
 /* Maximum encoded size of messages (where known) */
+/* transporter_WifiCredentials_size depends on runtime parameters */
 /* transporter_UID_size depends on runtime parameters */
 /* transporter_RegisterRequest_size depends on runtime parameters */
 /* transporter_RegisterResponse_size depends on runtime parameters */
@@ -341,12 +446,17 @@ extern const pb_msgdesc_t transporter_LDRData_msg;
 /* transporter_RfidEnvelope_size depends on runtime parameters */
 #define TRANSPORTER_TRANSPORTER_PB_H_MAX_SIZE    transporter_ConfigTopic_size
 #define transporter_ClimateData_size             22
+#define transporter_ClimateRemoval_size          6
 #define transporter_Climate_size                 26
+#define transporter_ConfigRemoval_size           8
 #define transporter_ConfigTopic_size             175
 #define transporter_FullConfig_size              172
 #define transporter_LDRData_size                 12
+#define transporter_LDRRemoval_size              6
 #define transporter_LDR_size                     12
+#define transporter_MotionRemoval_size           6
 #define transporter_Motion_size                  20
+#define transporter_RelayStateSync_size          0
 #define transporter_RelayState_size              10
 
 #ifdef __cplusplus

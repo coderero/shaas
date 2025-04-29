@@ -15,6 +15,11 @@ enum RelayStateType{
   ON = 1;
 }
 
+message WifiCredentials {
+  string ssid = 1;
+  string password = 2;
+}
+
 message UID {
   bytes value = 1;
 }
@@ -82,11 +87,31 @@ message ConfigTopic {
   }
 }
 
+message ClimateRemoval {
+  uint32 id = 1;
+}
+message LDRRemoval {
+  uint32 id = 1;
+}
+message MotionRemoval {
+  uint32 id = 1;
+}
+
+message ConfigRemoval {
+  oneof payload {
+    ClimateRemoval climate = 2;
+    LDRRemoval ldr = 3;
+    MotionRemoval motion = 4;
+  }
+}
+
 message RelayState {
   RelayType type = 1;
   uint32 port = 2;
   RelayStateType state = 3;
 }
+
+message RelayStateSync {}
 
 message ClimateData {
   uint32 id = 1;

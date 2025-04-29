@@ -181,6 +181,24 @@ public:
     motion get_motion_config(uint8_t id);
 
     /**
+     * @brief Deletes a climate configuration by ID.
+     * @param id Unique identifier of the climate config to delete.
+     */
+    void delete_climate_config(uint8_t id);
+
+    /**
+     * @brief Deletes an LDR configuration by ID.
+     * @param id Unique identifier of the LDR config to delete.
+     */
+    void delete_ldr_config(uint8_t id);
+
+    /**
+     * @brief Deletes a motion configuration by ID.
+     * @param id Unique identifier of the motion config to delete.
+     */
+    void delete_motion_config(uint8_t id);
+
+    /**
      * @brief Returns a pointer to the internal configuration data.
      * @return Pointer to config_data structure.
      */

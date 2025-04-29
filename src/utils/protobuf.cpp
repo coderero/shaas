@@ -45,6 +45,8 @@ bool decode_uid_bytes(pb_istream_t *stream, const pb_field_t *field, void **arg)
     // Get the shared data structure
     CallbackSharedData *shared_data = (CallbackSharedData *)*arg;
 
+    uint32_t uid[MAX_UID_LENGTH];
+
     // Calculate maximum buffer size
     size_t len = stream->bytes_left;
     if (len > MAX_UID_LENGTH)
@@ -53,7 +55,7 @@ bool decode_uid_bytes(pb_istream_t *stream, const pb_field_t *field, void **arg)
     }
 
     // Read directly into our buffer
-    if (!pb_read(stream, shared_data->uid_buffer, len))
+    if (!pb_read(stream, (pb_byte_t *)uid, len))
     {
         Serial.println("Failed to read UID bytes");
         return false;
@@ -64,14 +66,14 @@ bool decode_uid_bytes(pb_istream_t *stream, const pb_field_t *field, void **arg)
     shared_data->has_uid = (len > 0);
 
     // Debug output
-
-    Serial.print("UID received: ");
-    for (size_t i = 0; i < len; i++)
+    shared_data->uid_buffer = (uint8_t *)malloc(len);
+    if (shared_data->uid_buffer == nullptr)
     {
-        Serial.print(shared_data->uid_buffer[i], HEX);
-        Serial.print(" ");
+        Serial.println("Failed to allocate memory for UID buffer");
+        return false;
     }
-    Serial.println();
+    memcpy(shared_data->uid_buffer, uid, len);
+    shared_data->uid_length = len;
 
     return true;
 }
@@ -111,15 +113,6 @@ bool msg_callback(pb_istream_t *stream, const pb_field_t *field, void **arg)
             Serial.println(PB_GET_ERROR(stream));
             return false;
         }
-
-        // Debug output moved to the decode_uid_bytes callback
-        Serial.print("RevokeRequest received: ");
-        for (size_t i = 0; i < shared_data->uid_length; i++)
-        {
-            Serial.print(shared_data->uid_buffer[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println();
 
         return true;
     }

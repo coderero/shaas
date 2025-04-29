@@ -99,22 +99,7 @@ public:
 
         if (configManager.load(config))
         {
-            Serial.println("SystemMonitor: Config loaded successfully");
-            Serial.print("SystemMonitor: MQTT Broker: ");
-            Serial.println(config.mqtt.broker); // Log broker
-            Serial.print("SystemMonitor: MQTT Port: ");
-            Serial.println(config.mqtt.port);
-            Serial.print("SystemMonitor: MQTT Topic: ");
-            Serial.println(config.mqtt.topic);
-
-            wifi = new WiFiManager(config.wifi);
-            mqtt = new MQTTManager(config.mqtt);
-            wifi->begin();
-            mqtt->begin();                             // Use the static wrapper
-            mqtt->set_callback(mqtt_callback_wrapper); // Set the callback
-            configEngine.init();
-            whitelistManager.init(mqtt, config.device_uid);
-            state = SystemState::CONNECT_WIFI;
+            configureBasicConfig();
         }
         else
         {
@@ -199,9 +184,20 @@ public:
             {
                 whitelistManager.init(mqtt, config.device_uid);
 
-                // Publish a test message to verify MQTT is working
+                uint8_t buffer[256];
+                pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+                transporter_RelayStateSync relayStateSync = transporter_RelayStateSync_init_zero;
+
+                if (!pb_encode(&stream, transporter_RelayStateSync_fields, &relayStateSync))
+                {
+                    Serial.print("SystemMonitor: Failed to encode RelayStateSync: ");
+                    Serial.println(PB_GET_ERROR(&stream));
+                    return;
+                }
+
+                String relayStateTopic = "arduino/" + config.device_uid + "/relay/full";
+                mqtt->publish(relayStateTopic.c_str(), buffer, stream.bytes_written);
                 mqtt->publish("device/arduino/test", "Test message from SystemMonitor");
-                Serial.println("SystemMonitor: Published test message to device/arduino/test");
 
                 if (!security)
                 {
@@ -213,12 +209,18 @@ public:
                     }
                 }
 
+                String wifi_config = "arduino/" + config.device_uid + "/wifi";
                 String rfid_topic = "arduino/" + config.device_uid + "/rfid";
                 String config_topic = "arduino/" + config.device_uid + "/config";
+                String config_removal = "arduino/" + config.device_uid + "/config/remove";
                 String relay_state = "arduino/" + config.device_uid + "/relay";
+                String factory_reset = "arduino/" + config.device_uid + "/factory_reset";
+                mqtt->subscribe(wifi_config.c_str());
                 mqtt->subscribe(rfid_topic.c_str());
                 mqtt->subscribe(config_topic.c_str());
+                mqtt->subscribe(config_removal.c_str());
                 mqtt->subscribe(relay_state.c_str());
+                mqtt->subscribe(factory_reset.c_str());
                 state = SystemState::READY;
             }
             break;
@@ -248,37 +250,125 @@ public:
 
     void mqtt_callback_manager(const char *topic, uint8_t *payload, unsigned int length)
     {
+        String wifi_config = "arduino/" + config.device_uid + "/wifi";
         String rfid_topic = "arduino/" + config.device_uid + "/rfid";
         String config_module = "arduino/" + config.device_uid + "/config";
+        String config_removal = "arduino/" + config.device_uid + "/config/remove";
         String relay_state = "arduino/" + config.device_uid + "/relay";
+        String factory_reset = "arduino/" + config.device_uid + "/factory_reset";
+        if (strcmp(topic, wifi_config.c_str()) == 0)
+        {
+            handle_wiifi_credentials(payload, length);
+        }
+
         if (strcmp(topic, rfid_topic.c_str()) == 0)
         {
-            handle_security(topic, payload, length);
+            handle_security(payload, length);
         }
 
         if (strcmp(topic, config_module.c_str()) == 0)
         {
-            handle_config_manager(topic, payload, length);
+            handle_config_manager(payload, length);
+        }
+
+        if (strcmp(topic, config_removal.c_str()) == 0)
+        {
+            handle_config_removal(payload, length);
         }
 
         if (strcmp(topic, relay_state.c_str()) == 0)
         {
-            pb_istream_t stream = pb_istream_from_buffer(payload, length);
+            handle_relay_toggle(payload, length);
+        }
 
-            transporter_RelayState relayState = transporter_RelayState_init_zero;
-            if (pb_decode(&stream, transporter_RelayState_fields, &relayState))
+        if (strcmp(topic, factory_reset.c_str()) == 0)
+        {
+            for (int i = 0; i < EEPROM.length(); i++)
             {
-                relayControl.toggleRelay(relayState.type, relayState.port, relayState.state);
+                EEPROM.write(i, 0);
             }
-            else
-            {
-                Serial.print("SystemMonitor: Failed to decode RelayState: ");
-                Serial.println(PB_GET_ERROR(&stream));
-            }
+
+            NVIC_SystemReset();
         }
     }
 
-    void handle_security(const char *topic, uint8_t *payload, unsigned int length)
+    void handle_config_removal(uint8_t *payload, unsigned int length)
+    {
+        pb_istream_t stream = pb_istream_from_buffer(payload, length);
+        transporter_ConfigRemoval config_removal = transporter_ConfigRemoval_init_zero;
+        if (pb_decode(&stream, transporter_ConfigRemoval_fields, &config_removal))
+        {
+            switch (config_removal.which_payload)
+            {
+            case transporter_ConfigRemoval_climate_tag:
+                configEngine.delete_climate_config(config_removal.payload.climate.id);
+                break;
+            case transporter_ConfigRemoval_ldr_tag:
+                configEngine.delete_ldr_config(config_removal.payload.ldr.id);
+                break;
+            case transporter_ConfigRemoval_motion_tag:
+                configEngine.delete_motion_config(config_removal.payload.motion.id);
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
+            Serial.print("SystemMonitor: Failed to decode ConfigRemoval: ");
+            Serial.println(PB_GET_ERROR(&stream));
+        }
+    }
+
+    void handle_wiifi_credentials(uint8_t *payload, unsigned int length)
+    {
+        Config config;
+        char ssid[32], password[32];
+
+        pb_istream_t stream = pb_istream_from_buffer(payload, length);
+        transporter_WifiCredentials wifi_credentials = transporter_WifiCredentials_init_zero;
+        wifi_credentials.ssid.funcs.decode = decode_string;
+        wifi_credentials.password.funcs.decode = decode_string;
+        wifi_credentials.ssid.arg = (void *)ssid;
+        wifi_credentials.password.arg = (void *)password;
+
+        if (pb_decode(&stream, transporter_WifiCredentials_fields, &wifi_credentials))
+        {
+            Serial.print("SystemMonitor: Received WiFi credentials: ");
+            Serial.print(ssid);
+            Serial.print(", ");
+            Serial.println(password);
+
+            config.wifi.ssid = String(ssid);
+            config.wifi.password = String(password);
+            configManager.update_config(config);
+
+            NVIC_SystemReset();
+        }
+        else
+        {
+            Serial.print("SystemMonitor: Failed to decode WiFi credentials: ");
+            Serial.println(PB_GET_ERROR(&stream));
+        }
+    }
+
+    void handle_relay_toggle(uint8_t *payload, unsigned int length)
+    {
+        pb_istream_t stream = pb_istream_from_buffer(payload, length);
+        transporter_RelayState relayState = transporter_RelayState_init_zero;
+
+        if (pb_decode(&stream, transporter_RelayState_fields, &relayState))
+        {
+            relayControl.toggleRelay(relayState.type, relayState.port, relayState.state);
+        }
+        else
+        {
+            Serial.print("SystemMonitor: Failed to decode RelayState: ");
+            Serial.println(PB_GET_ERROR(&stream));
+        }
+    }
+
+    void handle_security(uint8_t *payload, unsigned int length)
     {
         CallbackSharedData shared_data = {0};
         pb_istream_t stream = pb_istream_from_buffer(payload, length);
@@ -296,16 +386,8 @@ public:
                 whitelistManager.set_mode_registration();
                 break;
             case transporter_RfidEnvelope_revoke_request_tag:
-                Serial.print("SystemMonitor: RevokeRequest received: ");
-                for (size_t i = 0; i < shared_data.uid_length; i++)
-                {
-                    Serial.print(shared_data.uid_buffer[i], HEX);
-                    Serial.print(" ");
-                }
-                Serial.println();
                 uint8_t uid_copy[MAX_UID_LENGTH];
                 memcpy(uid_copy, shared_data.uid_buffer, shared_data.uid_length);
-
                 whitelistManager.delete_uid(uid_copy, shared_data.uid_length);
                 break;
             default:
@@ -319,7 +401,7 @@ public:
         }
     };
 
-    void handle_config_manager(const char *topic, uint8_t *payload, unsigned int length)
+    void handle_config_manager(uint8_t *payload, unsigned int length)
     {
         pb_istream_t stream = pb_istream_from_buffer(payload, length);
 
