@@ -64,6 +64,7 @@ void Climate::read_climate_data()
 {
     // Read DHT sensor via mux
     mux->channel(d_port);
+    pinMode(mux->getSignalPin(), INPUT_PULLUP);
     temperature = dht_sensor->readTemperature();
     humidity = dht_sensor->readHumidity();
 

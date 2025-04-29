@@ -258,7 +258,7 @@ public:
         String factory_reset = "arduino/" + config.device_uid + "/factory_reset";
         if (strcmp(topic, wifi_config.c_str()) == 0)
         {
-            handle_wiifi_credentials(payload, length);
+            handle_wifi_credentials(payload, length);
         }
 
         if (strcmp(topic, rfid_topic.c_str()) == 0)
@@ -294,6 +294,7 @@ public:
 
     void handle_config_removal(uint8_t *payload, unsigned int length)
     {
+        Serial.println("SystemMonitor: Received ConfigRemoval");
         pb_istream_t stream = pb_istream_from_buffer(payload, length);
         transporter_ConfigRemoval config_removal = transporter_ConfigRemoval_init_zero;
         if (pb_decode(&stream, transporter_ConfigRemoval_fields, &config_removal))
@@ -312,6 +313,8 @@ public:
             default:
                 break;
             }
+
+            NVIC_SystemReset();
         }
         else
         {
@@ -320,7 +323,7 @@ public:
         }
     }
 
-    void handle_wiifi_credentials(uint8_t *payload, unsigned int length)
+    void handle_wifi_credentials(uint8_t *payload, unsigned int length)
     {
         Config config;
         char ssid[32], password[32];
@@ -403,6 +406,7 @@ public:
 
     void handle_config_manager(uint8_t *payload, unsigned int length)
     {
+        Serial.println("Recieved Config");
         pb_istream_t stream = pb_istream_from_buffer(payload, length);
 
         transporter_ConfigTopic config = transporter_ConfigTopic_init_zero;
