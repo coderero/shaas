@@ -84,6 +84,8 @@ private:
         config.device_uid = doc["device_uid"].as<String>();
         config.wifi.ssid = doc["wifi"]["ssid"].as<String>();
         config.wifi.password = doc["wifi"]["password"].as<String>();
+        config.mqtt.username = doc["mqtt"]["username"].as<String>();
+        config.mqtt.password = doc["mqtt"]["password"].as<String>();
         config.mqtt.broker = doc["mqtt"]["broker"].as<String>();
         config.mqtt.port = doc["mqtt"]["port"].as<uint16_t>();
         config.mqtt.topic = doc["mqtt"]["topic"].as<String>();
